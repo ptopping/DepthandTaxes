@@ -16,6 +16,11 @@ class FECLoad(object):
 		self.is_pres = is_pres
 		self.is_primary = is_primary
 		self.is_house = is_house
+		self.col_list = ['STATE', 'CANDIDATE', 'PARTY', '#OFVOTES']
+		self.col_dict = {'STATE' : 'POSTAL', '#OFVOTES' : 'GENERAL'}
+		self.party_dict = {'I(GRN)' : 'GRN', 'I(LBT)' : 'LBT', 'I(REF)' : 'REF', 'I(I)' : 'I', 'I(SOC)' : 'SOC', 'I(CON)' : 'CON', 'I(SWP)' : 'SWP', 'PRO/GRN' : 'PRO'}
+		self.pesky_labels = {'Republican Party' : 'Republican', 'Democratic Party' : 'Democratic'}
+		
 		if year == 2016:
 			self.excel = pd.read_excel('C:\\Users\\ptopp\\Documents\\DepthandTaxes\\{file}.xlsx'.format(file=excel), header=None, sheet_name=None)
 			self.pres_general = self.excel.get('2016 Pres General Results')
@@ -102,13 +107,7 @@ class FECLoad(object):
 
 		if year == 2000:
 			if is_pres == True:
-				if is_primary == False:
-					#Set variables
-					col_list = ['STATE', 'CANDIDATE', 'PARTY', '#OFVOTES']
-					col_dict = {'STATE' : 'POSTAL', '#OFVOTES' : 'GENERAL'}
-					party_dict = {'I(GRN)' : 'GRN', 'I(LBT)' : 'LBT', 'I(REF)' : 'REF', 'I(I)' : 'I', 'I(SOC)' : 'SOC', 'I(CON)' : 'CON', 'I(SWP)' : 'SWP', 'PRO/GRN' : 'PRO'}
-					pesky_labels = {'Republican Party' : 'Republican', 'Democratic Party' : 'Democratic'}
-					
+				if is_primary == False:			
 					#Set column headers
 					df1 = self.pres_general
 					df1.rename(columns=df1.iloc[0],inplace=True)
@@ -118,28 +117,10 @@ class FECLoad(object):
 					#Remove extraneous records
 					df1.dropna(subset=['PARTY'],how='any',inplace=True)
 
-					#Select and rename wanted columns
-					cols = [c for c in col_list if c in df1.columns]
-					df = df1[cols]
-					df.rename(columns=col_dict,inplace=True)
-
-					#Tidy columns
-					df.loc[:,'POSTAL'] = df.POSTAL.str.strip()
-					df.loc[:,'CANDIDATE'] = df.CANDIDATE.str.strip()
-					df.loc[:,'PARTY'] = df.PARTY.str.replace(' ','')
-					df.loc[:,'PARTY'] = df.PARTY.str.strip()
-					df.loc[:,'PARTY'].replace(party_dict,inplace=True)
-					df.loc[:,'PARTY'].replace(label_dict,inplace=True)
-					df.loc[:,'PARTY'].replace(pesky_labels,inplace=True)
-					df.loc[:,'GENERAL'] = df.GENERAL.apply(pd.to_numeric)
+					#Make sure numeric dtypes are numeric
+					df1.loc[:,'#OFVOTES'] = df1['#OFVOTES'].apply(pd.to_numeric)
 
 				if is_primary == True:
-					#Set variables
-					col_list = ['STATE', 'CANDIDATE', 'PARTY', '#OFVOTES']
-					col_dict = {'STATE' : 'POSTAL', '#OFVOTES' : 'PRIMARY'}
-					party_dict = {'W(D)' : 'D', 'W(R)' : 'R', 'W(GRN)' : 'GRN', 'W(REF)' : 'REF', 'W(N)' :'N', 'UN(R)' : 'R', 'UN(D)' :'D'}
-					pesky_labels = {'Republican Party' : 'Republican', 'Democratic Party' : 'Democratic'}
-					
 					#Set column headers
 					df1 = self.pres_primary
 					df1.rename(columns=df1.iloc[0],inplace=True)
@@ -150,27 +131,36 @@ class FECLoad(object):
 					df1.dropna(subset=['PARTY'],how='any',inplace=True)
 					df1 = df1[df1['CANDIDATE'] != 'Total Party Votes']
 
-					#Select and rename wanted columns
-					cols = [c for c in col_list if c in df1.columns]
-					df = df1[cols]
-					df.rename(columns=col_dict,inplace=True)
+					#Make sure numeric dtypes are numeric
+					df1.loc[:,'#OFVOTES'] = df1['#OFVOTES'].apply(pd.to_numeric)
 
-					#Tidy columns
-					df.loc[:,'POSTAL'] = df.POSTAL.str.strip()
-					df.loc[:,'CANDIDATE'] = df.CANDIDATE.str.strip()
-					df.loc[:,'PARTY'] = df.PARTY.str.replace(' ','')
-					df.loc[:,'PARTY'] = df.PARTY.str.strip()
-					df.loc[:,'PARTY'].replace(party_dict,inplace=True)
-					df.loc[:,'PARTY'].replace(label_dict,inplace=True)
-					df.loc[:,'PARTY'].replace(pesky_labels,inplace=True)
-					df.loc[:,'PRIMARY'] = df.PRIMARY.apply(pd.to_numeric)
+					#Year 2000 specific eliminate confusion
+					df1.rename(columns={'#OFVOTES' : 'PRIMARY'},inplace=True)
+				
+				#Add needed columns
+				df1.loc[:,'YEAR'] = year #TODO unmangle 2000 Presidential Primary dates
+				df1.loc[:, 'DISTRICT' = 'President'
+					
+		#Select and rename wanted columns
+		cols = [c for c in self.col_list if c in df1.columns]
+		df = df1[cols]
+		df.rename(columns=self.col_dict,inplace=True)
+
+		#Tidy columns
+		df.loc[:,'POSTAL'] = df.POSTAL.str.strip()
+		df.loc[:,'CANDIDATE'] = df.CANDIDATE.str.strip()
+		df.loc[:,'PARTY'] = df.PARTY.str.replace(' ','')
+		df.loc[:,'PARTY'] = df.PARTY.str.strip()
+		df.loc[:,'PARTY'].replace(party_dict,inplace=True)
+		df.loc[:,'PARTY'].replace(label_dict,inplace=True)
+		df.loc[:,'PARTY'].replace(pesky_labels,inplace=True)
 
 		return df
 
 
-class ElectionResults(FECLoad):
+class ElectionResults(object):
 	"""docstring for ElectionResults"""
-	def __init__(self, excel, year, is_pres=True, is_primary=False, is_house=False):
-		super().__init__(excel, year, is_pres=True, is_primary=False, is_house=False)
-		self.excel = excel
+	def __init__(self, type='President'):
+
+
 		
