@@ -9,10 +9,11 @@ import seaborn as sns
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
+NFLSpread = '1WHcRMJTwwbnYicswXiuPvkjEx1sak5O9GeUj2UiiY6s'
 
 def main(SPREADSHEET_ID,RANGE_NAME):
-    """Shows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
+    """Calls Google Sheets API.
+    Returns value from QB Stats spreadsheet.
     """
     store = file.Storage('token.json')
     creds = store.get()
@@ -22,63 +23,13 @@ def main(SPREADSHEET_ID,RANGE_NAME):
     service = build('sheets', 'v4', http=creds.authorize(Http()))
 
     # Call the Sheets API
-    #SPREADSHEET_ID = '1WHcRMJTwwbnYicswXiuPvkjEx1sak5O9GeUj2UiiY6s'
-    #RANGE_NAME = 'Week 1!A1:AE'
     result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID,
                                                 range=RANGE_NAME).execute()
     values = result.get('values', [])
     return values
 
-NFLSpread = '1WHcRMJTwwbnYicswXiuPvkjEx1sak5O9GeUj2UiiY6s'
 
-# ------- PART 1: Define a function that do a plot for one line of the dataset!
 
-# def make_spider( row, title, color):
-#     # number of variable
-#     categories=list(df)[3:]
-#     N = len(categories)
-#
-#     # What will be the angle of each axis in the plot? (we divide the plot / number of variable)
-#     angles = [n / float(N) * 2 * pi for n in range(N)]
-#     angles += angles[:1]
-#
-#     # Initialise the spider plot
-#     ax = plt.subplot(4,4,row+1, polar=True, )
-#
-#     # If you want the first axis to be on top:
-#     ax.set_theta_offset(pi / 2)
-#     ax.set_theta_direction(-1)
-#
-#     # Draw one axe per variable + add labels labels yet
-#     plt.xticks(angles[:-1], categories, color='grey', size=8)
-#
-#     # Draw ylabels
-#     ax.set_rlabel_position(45)
-#     plt.yticks([-2,-1,0,1,2], ["-2","-1","0","1","2"], color="grey", size=7)
-#     plt.ylim(-3,3)
-#
-#     # Ind1
-#     values=df.loc[row].drop(['Name','Tm','Cat']).values.flatten().tolist()
-#     values += values[:1]
-#     ax.plot(angles, values, color=color, linewidth=2, linestyle='solid')
-#     ax.fill(angles, values, color=color, alpha=0.4)
-#
-#     # Add a title
-#     plt.title(title, size=11, color=color, y=1.1)
-#     plt.tight_layout()
-#
-#
-# # ------- PART 2: Apply to all individuals
-# # initialize the figure
-# my_dpi=96
-# plt.figure(figsize=(1000/my_dpi, 1000/my_dpi), dpi=my_dpi)
-#
-# # Create a color palette:
-# my_palette = plt.cm.get_cmap("Dark2", len(df.index))
-#
-# # Loop to plot
-# for row in range(0, len(df.index)):
-#     make_spider( row=row, title=df.loc[row,'Name']+' '+df.loc[row,'Tm'], color=my_palette(row))
 
 def make_df(dataframe):
     df = dataframe
