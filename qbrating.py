@@ -45,9 +45,6 @@ def main(SPREADSHEET_ID,RANGE_NAME):
     values = result.get('values', [])
     return values
 
-
-
-
 def make_df(dataframe):
     '''Creates a DataFrame of Passer Rating Components and performs a z transform
     '''
@@ -95,7 +92,7 @@ def make_spider(df):
     angles += angles[:1]
 
     df['Close'] = df['z_CmpPct']
-    df1 = df.melt(id_vars=['Name','Tm','Cat','Rate'])
+    df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
 
     map_loc = dict(zip(categories,angles))
     map_loc['Close'] = 0
@@ -112,3 +109,31 @@ def make_spider(df):
     g = g.set_titles('{col_name}')
     plt.tight_layout()
     g.savefig('{}.png'.format(df.iloc[0,3]))
+
+def rating_uniplot(df):
+    sns.set_style('darkgrid')
+    g = sns.FacetGrid(data=df, sharex=False, sharey=False)
+    g.map(plt.hist, 'Rate')
+    plt.tight_layout()
+    g.savefifg('{}.png'.format()) #TODO
+    
+    g2 = sns.FacetGrid(data=df, sharex=False, sharey=False)
+    g2.map(plt.hist, 'Wins')
+    plt.tight_layout()
+    g2.savefig('{}.png'.format()) #TODO
+    
+    df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
+    g3 = sns.FacetGrid(data=df1, cols=variable, col_wrap=2, sharex=False, sharey=False)
+    g3 = g.map(plt.hist, 'value')
+    plt.tight_layout()
+    g3.savefig('{}.png'.format()) #TODO
+    
+def rating_biplot(df):
+    sns.set_style('darkgrid')
+    df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
+    df1.reset_index(inplace=True)
+    g = sns.relplot(x='value', y='Wins', data=df1, col='variable', col_wrap=2, kind='scatter')
+    g.savefig('{}.png'.format())
+    
+    g1 = sns.pairplot(df[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
+    g1.savefig('{}.png'.format())
