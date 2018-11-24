@@ -35,17 +35,19 @@ def make_df(dataframe):
     df = dataframe
     df = pd.DataFrame(df,columns=df[0])
     df = df.iloc[1:]
-    df['Cmp'] = df['Cmp'].astype('float')
-    df['Att'] = df['Att'].astype('float')
-    df['Yds'] = df['Yds'].astype('float')
-    df['TD'] = df['TD'].astype('float')
-    df['Int'] = df['Int'].astype('float')
-    df['G'] = df['G'].astype('float')
-    df['CmpPct'] = df['Cmp']/df['Att']
-    df['YardsPer'] = df['Yds']/df['Att']
-    df['TDPct'] = df['TD']/df['Att']
+#     df['Cmp'] = df['Cmp'].astype('float')
+#     df['Att'] = df['Att'].astype('float')
+#     df['Yds'] = df['Yds'].astype('float')
+#     df['TD'] = df['TD'].astype('float')
+#     df['Int'] = df['Int'].astype('float')
+#     df['G'] = df['G'].astype('float')
+    df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']] = df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']].astype('float')
+#     df['CmpPct'] = df['Cmp']/df['Att']
+#     df['YardsPer'] = df['Yds']/df['Att']
+#     df['TDPct'] = df['TD']/df['Att']
     df['IntPct'] = 1 - df['Int']/df['Att']
     df['AttPer'] = df['Att']/df['G']
+    df[['CmpPct', 'YardsPer', 'TDPct', 'IntPct']] = df[['Cmp', 'Yds', 'TD']].div(df['Att'].values, axis=0)
     df = df[['Name','Tm','Cmp','Att','Yds','TD','Int','AttPer','CmpPct','YardsPer','TDPct','IntPct']]
     df['z_CmpPct'] = (df.CmpPct - df.CmpPct.mean())/df.CmpPct.std()
     df['z_YardsPer'] = (df.YardsPer - df.YardsPer.mean())/df.YardsPer.std()
