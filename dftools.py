@@ -1,7 +1,14 @@
-import pandas as pd
-import numpy as np
+# import pandas as pd
+# import numpy as np
 
 def make_labels(label_sheet,year):
+	'''Creates a dictionary to map Party Abbreviations to Party Names
+	Inputs
+	label_sheet = Spreadsheet with party abbreviations in column 0 and party names in column2
+	year = Election year
+	Outputs
+	dictionary of {party abbreviation : party name}
+	'''
 	label_sheet.rename(columns={0 : 'ABBREVIATION', 2 : 'PARTYNAME'}, inplace=True)
 	label_sheet.set_index('ABBREVIATION', inplace=True)
 	label_sheet.index = label_sheet.index.str.replace(' ','')
@@ -10,23 +17,36 @@ def make_labels(label_sheet,year):
 	return label_sheet['PARTYNAME']
 
 def make_headers(df,year):
+	'''Makes the first line of results dataframes the column headers
+	Inputs
+	df = election results dataframe
+	year = Election year
+	Outputs
+	Election results dataframe with new column headers''' 
 	df.rename(columns=df.iloc[0],inplace=True)
 	df.drop(df.index[0],inplace=True)
 	df.columns = df.columns.str.replace(' ','')
 	return df
 
 class FECLoad(object):
-	"""docstring for ElectionResults"""
+	"""Read_excel is set up without column headers as they vary from sheet to sheet
+	excel = str, Name of an excel spreadsheet
+	year = int, Election year
+	is_pres = Bool, presidential results or not
+	is_primary = Bool, primary election or not
+	is_house = Bool, house elections or not (otherwise is Senate elections)"""
 	def __init__(self, excel, year, is_pres=True, is_primary=False, is_house=False):
+		#Set global variables
 		self.year = year
 		self.is_pres = is_pres
 		self.is_primary = is_primary
 		self.is_house = is_house
 		self.results_cleanup = {'*' : np.nan, 'Unopposed' : np.nan, ' ' : np.nan}
+		self.col_list = ['YEAR', 'STATE', 'STATEABBREVIATION', 'DISTRICT', 'FECID', 'INCUMBENTINDICATOR', 'CANDIDATENAME', 'PARTY', 'PRIMARYVOTES', 'RUNOFFVOTES', 'GENERALVOTES', 'GERUNOFFELECTIONVOTES',
+				 'GENERALELECTIONDATE', 'PRIMARYDATE']
+		self.senate_dict = {}
 
-# 'STATEABBREVIATION', 'STATE', 'DISTRICT', 'FECID', 'INCUMBENTINDICATOR', 'CANDIDATENAME', 'PARTY', 'PRIMARYVOTES', 'RUNOFFVOTES', 'GENERALVOTES', 'GERUNOFFELECTIONVOTES',
-# 'GENERALELECTIONDATE', 'PRIMARYDATE'
-
+		#Check election year
 		if year == 2016:
 			self.excel = pd.read_excel('C:\\Users\\ptopp\\Documents\\DATFiles\\{file}.xlsx'.format(file=excel), header=None, sheet_name=None)
 			self.pres_general = make_headers(self.excel.get('2016 Pres General Results'), year)
@@ -102,6 +122,10 @@ class FECLoad(object):
 				self.dates = self.excel.get('2014 Primary Dates')
 
 	def pretty(self):
+		'''Returns pretty dataframes of election results
+		2000 = 4 Frames
+		2002 and on = 1 Frame
+		'''
 		year = self.year
 		is_pres = self.is_pres
 		is_primary = self.is_primary
@@ -119,91 +143,152 @@ class FECLoad(object):
 
 			if is_pres == True:
 				if is_primary == False:			
+					#Make column dictionary
+					col_dict = {}
+					
 					#Remove extraneous records
 					df = self.pres_general
 					df.dropna(subset=['PARTY'],how='any',inplace=True)
 
+					#Rename local columns
+					df.rename(columns=col_dict,inplace=True)
+					
 					#Make sure numeric dtypes are numeric
-					df.loc[:,'#OFVOTES'] = df['#OFVOTES'].apply(pd.to_numeric)
+# 					df.loc[:,'#OFVOTES'] = df['#OFVOTES'].apply(pd.to_numeric)
 
 				if is_primary == True:
+					#Make column dictionary
+					col_dict = {}
+					
 					#Remove extraneous records
 					df = self.pres_primary
 					df.dropna(subset=['PARTY'],how='any',inplace=True)
 					df = df[df['CANDIDATE'] != 'Total Party Votes']
 
+					#Rename Local columns
+					df.rename(columns=col_dict,inplace=True)
+					
 					#Make sure numeric dtypes are numeric
-					df.loc[:,'#OFVOTES'] = df['#OFVOTES'].apply(pd.to_numeric)
-
-				# 	#Rename Local columns
-				# 	df.rename(columns={'#OFVOTES' : 'PRIMARYVOTES'},inplace=True)
-				
-				# #Add needed columns
-				# df.loc[:,'YEAR'] = year #TODO unmangle 2000 Presidential Primary dates
-				# df.loc[:, 'DISTRICT'] = 'President'
+# 					df.loc[:,'#OFVOTES'] = df['#OFVOTES'].apply(pd.to_numeric)
+			
+				#Add needed columns
+				df.loc[:,'YEAR'] = year #TODO unmangle 2000 Presidential Primary dates
+				df.loc[:, 'DISTRICT'] = 'President'
 
 			if is_pres == False:
 				if is_house == True:
+					#Make column dictionary
+					col_dict = {}
+					
 					#Remove extraneous records
 					df = self.house
 					df.dropna(subset=['PARTY'],how='any',inplace=True)
 					df = df[df['PARTY'] != 'Combined']
 
+					#Rename Local columns
+					df.rename(columns=col_dict,inplace=True)
+					
 					#Make sure numeric dtypes are numeric
-					df['PRIMARYRESULTS'].replace(self.results_cleanup,inplace=True)
-					df.loc[:,'RUNOFFRESULTS'] = df['RUNOFFRESULTS'].apply(pd.to_numeric)
-					df['GENERALRESULTS'].replace(self.results_cleanup,inplace=True)
+# 					df['PRIMARYRESULTS'].replace(self.results_cleanup,inplace=True)
+# 					df.loc[:,'RUNOFFRESULTS'] = df['RUNOFFRESULTS'].apply(pd.to_numeric)
+# 					df['GENERALRESULTS'].replace(self.results_cleanup,inplace=True)
 					
 
 				if is_house == False:
+					#Make column dictionary
+					col_dict = {}
+					
 					#Remove extraneous records
 					df = self.senate
 					df.dropna(subset=['PARTY'],how='any',inplace=True)
 					df = df[df['PARTY'] != 'Combined']
 
+					#Rename Local columns
+					df.rename(columns=col_dict,inplace=True)
+					
 					#Make sure numeric dtypes are numeric
-					df['PRIMARYRESULTS'].replace(self.results_cleanup,inplace=True)
-					df.loc[:,'RUNOFFRESULTS'] = df['RUNOFFRESULTS'].apply(pd.to_numeric)
-					df.loc[:,'GENERALRESULTS'] = df['GENERALRESULTS'].apply(pd.to_numeric)
+# 					df['PRIMARYRESULTS'].replace(self.results_cleanup,inplace=True)
+# 					df.loc[:,'RUNOFFRESULTS'] = df['RUNOFFRESULTS'].apply(pd.to_numeric)
+# 					df.loc[:,'GENERALRESULTS'] = df['GENERALRESULTS'].apply(pd.to_numeric)
 
-			# 	#Add needed columns
-			# 	df.loc[:,'YEAR'] = year #TODO unmangle 2000 Primary dates
+				#Add needed columns
+				df.loc[:,'YEAR'] = year #TODO unmangle 2000 Primary dates
 
-			# #For 2000 need to rename STATE to STATEABBREVIATION
-			# df.rename(columns={'STATE' : 'STATEABBREVIATION'},inplace=True)
+			#For 2000 need to rename STATE to STATEABBREVIATION
+			df.rename(columns={'STATE' : 'STATEABBREVIATION'},inplace=True)
 
 		elif year == 2002:
-			#Create label cleanup dictionaries
+			#Create local dictionaries
 			party_dict = {}
+			col_dict = {}
 
 			#Remove extraneous records
 			df = self.congress
 			df.dropna(subset=['PARTY'],how='any',inplace=True)
 			df = df[df['TOTALVOTES'] != 'Total Party Votes:']
 
+			#Rename Local columns
+			df.rename(columns=col_dict,inplace=True)
+			
+			#For 2002 need to rename STATE to STATEABBREVIATION
+			df.rename(columns={'STATE' : 'STATEABBREVIATION'},inplace=True)
+			
 		elif year == 2004:
 			#Create label cleanup dictionaries
 			party_dict = {}
-			pesky_labels = {} 
 
 			#Remove extraneous records
 
-		# 	#For 2002 need to rename STATE to STATEABBREVIATION
-		# 	df.rename(columns={'STATE' : 'STATEABBREVIATION'},inplace=True)
-	
-		# #Select and rename wanted columns
-		# cols = [c for c in self.col_list if c in df1.columns]
-		# df = df[cols]
-		# df.rename(columns=self.col_dict,inplace=True)
+		elif year == 2006:
+			#Create local dictionaries
+			party_dict = {}
+			col_dict = {}
+			
+			#Remove extraneous records
 
-		# #Tidy columns
-		# df.loc[:,'STATEABBREVIATION'] = df.STATEABBREVIATION.str.strip()
-		# df.loc[:,'CANDIDATENAME'] = df.CANDIDATENAME.str.strip()
+		elif year == 2008:
+			#Create label cleanup dictionaries
+			party_dict = {}
+
+			#Remove extraneous records
+
+		elif year == 2010:
+			#Create local dictionaries
+			party_dict = {}
+			col_dict = {}
+			
+			#Remove extraneous records
+
+		elif year == 2012:
+			#Create label cleanup dictionaries
+			party_dict = {}
+
+			#Remove extraneous records
+
+		elif year == 2014:
+			#Create label cleanup dictionaries
+			party_dict = {}
+
+			#Remove extraneous records
+
+		elif year == 2016:
+			#Create label cleanup dictionaries
+			party_dict = {}
+
+			#Remove extraneous records
+
+		#Select wanted columns
+		cols = [c for c in self.col_list if c in df.columns]
+		df = df[cols]
+
+		#Tidy columns
+		df.loc[:,'STATEABBREVIATION'] = df.STATEABBREVIATION.str.strip()
+		df.loc[:,'CANDIDATENAME'] = df.CANDIDATENAME.str.strip()
 		df.loc[:,'PARTY'] = df.PARTY.str.replace(' ','')
 		df.loc[:,'PARTY'] = df.PARTY.str.strip()
 		df.loc[:,'PARTY'].replace(party_dict,inplace=True)
 		df.loc[:,'PARTY'].replace(label_dict,inplace=True)
-		# df.loc[:,'DISTRICT'].replace(senate_dict,inplace=True)
+		df.loc[:,'DISTRICT'].replace(self.senate_dict,inplace=True)
 
 		return df
 
