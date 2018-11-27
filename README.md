@@ -15,6 +15,16 @@ dftools: manipulating census and election datasets for elections
 
 qbrating: Used for statistical analysis of NFL QB play
 
+	qbrating
+		
+		-main
+		
+		-make_spider
+		
+		-rating_uniplot
+		
+		-rating_biplot
+
 cbball: NCAA Tournament analysis
 
 floridaelec: Florida Election History
