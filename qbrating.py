@@ -27,6 +27,7 @@ week8 = make_df(main(NFLSpread,'Week 8!A1:AE'))
 week9 = make_df(main(NFLSpread,'Week 9!A1:AE'))
 week10 = make_df(main(NFLSpread,'Week 10!A1:AE'))
 week11 = make_df(main(NFLSpread,'Week 11!A1:AE'))
+week12 = make_df(main(NFLSpread,'Week 12!A1:AE'))
 
 def main(SPREADSHEET_ID,RANGE_NAME):
     """Calls Google Sheets API.
@@ -45,7 +46,7 @@ def main(SPREADSHEET_ID,RANGE_NAME):
     values = result.get('values', [])
     return values
 
-def make_df(dataframe):
+def ratings(dataframe):
     '''Creates a DataFrame of Passer Rating Components and performs a z transform
     '''
     df = dataframe
@@ -83,7 +84,7 @@ def make_df(dataframe):
     df.reset_index(drop=True,inplace=True)
     return df
 
-def make_spider(df):
+def spider(df):
     '''Creates faceted radar charts for Standardized Passing statistics
     '''
     df.reset_index(drop=True,inplace=True)
@@ -113,7 +114,7 @@ def make_spider(df):
     plt.tight_layout()
     g.savefig('{}.png'.format(df.iloc[0,3]))
 
-def rating_uniplot(df):
+def uniplot(df):
     sns.set_style('darkgrid')
     g = sns.FacetGrid(data=df, sharex=False, sharey=False)
     g.map(plt.hist, 'Rate')
@@ -131,7 +132,7 @@ def rating_uniplot(df):
     plt.tight_layout()
     g3.savefig('{}.png'.format()) #TODO
     
-def rating_biplot(df):
+def biplot(df):
     sns.set_style('darkgrid')
     df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
     df1.reset_index(inplace=True)
