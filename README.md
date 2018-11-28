@@ -2,28 +2,18 @@
 Data Files and Python Scripts for the Webpage
 
 dftools: manipulating census and election datasets for elections
-	
-	dftools
-		
-		-makeheaders
-		
-		-FECLoad
-			
-			-makelabels
-			
-			-pretty
+- dftools
+  - headers
+  - FECLoad
+    - labels
+    - pretty
 
 qbrating: Used for statistical analysis of NFL QB play
-
-	qbrating
-		
-		-main
-		
-		-make_spider
-		
-		-rating_uniplot
-		
-		-rating_biplot
+- qbrating
+  - main
+  - spider
+  - uniplot
+  - biplot
 
 cbball: NCAA Tournament analysis
 
