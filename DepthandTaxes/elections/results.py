@@ -165,7 +165,6 @@ class FECLoad(object):
 					df.rename(columns=col_dict,inplace=True)
 					
 					#Make sure numeric dtypes are numeric
-					df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
 					df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 
 				if is_primary == True:
@@ -181,7 +180,6 @@ class FECLoad(object):
 					df.rename(columns=col_dict,inplace=True)
 			
 					#Make sure numeric dtypes are numeric
-					df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
 					df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			
 				#Add needed columns
@@ -203,9 +201,6 @@ class FECLoad(object):
 					df.rename(columns=col_dict,inplace=True)
 					
 					#Make sure numeric dtypes are numeric
-					df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-					df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-					df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
 					df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 					df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 					df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -223,9 +218,6 @@ class FECLoad(object):
 					df.rename(columns=col_dict,inplace=True)
 
 					#Make sure numeric dtypes are numeric
-					df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-					df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-					df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
 					df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 					df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 					df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -255,9 +247,6 @@ class FECLoad(object):
 			
 			#Make sure numeric dtypes are numeric
 			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -303,9 +292,6 @@ class FECLoad(object):
 
 			#Make sure numeric dtypes are numeric
 			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -332,10 +318,6 @@ class FECLoad(object):
 			df.rename(columns=col_dict,inplace=True)
 
 			#Make sure numeric dtypes are numeric
-			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -373,10 +355,6 @@ class FECLoad(object):
 			df = df.append(df_con,sort=True)
 
 			#Make sure numeric dtypes are numeric
-			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -403,14 +381,9 @@ class FECLoad(object):
 			df.rename(columns=col_dict,inplace=True)
 			
 			#Make sure numeric dtypes are numeric
-			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
-			df.loc[:,'GERUNOFFELECTIONVOTES'] = df['GERUNOFFELECTIONVOTES'].apply(pd.to_numeric, errors= 'coerce')
 
 			#Add needed columns
 			df.loc[:,'YEAR'] = year #TODO unmangle Dates
@@ -449,9 +422,6 @@ class FECLoad(object):
 
 			#Make sure numeric dtypes are numeric
 			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -482,10 +452,7 @@ class FECLoad(object):
 			df = df_house.append(df_sen, sort= True)
 
 			#Make sure numeric dtypes are numeric
-			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
@@ -496,18 +463,22 @@ class FECLoad(object):
 
 		elif year == 2016:
 			#Create label cleanup dictionaries
-			party_dict = {}
-			col_dict = {}
+			party_dict = {'REP/AIP' : 'REP','W(D)': 'D', 'W(R)': 'R','W(GR)': 'GR', 'W(IP)': 'IP', 'W(GRE)/GRE': 'GRE', 'W(LIB)': 'LIB', 'W(GRE)': 'GRE', 'W(R)/R': 'R', 'W(NOP)': 'NOP', 'R/W': 'R', 
+						'W(DCG)': 'DCG', 'W(IND)': 'IND',  'W(D)/D': 'D', 'W(DNL)': 'DNL', 'D/IP': 'D', 'R/IP': 'R', 'IP/R': 'IP', 'D/PRO/WF/IP': 'D', 'R/CON': 'R', 'W(D)/W': 'D', 'W(NPP)': 'NPP', 
+						'W(PPD)': 'PPD', 'D/R': 'D', 'W(PRO)': 'PRO', 'W(WG)': 'WG', 'W(CON)': 'CON'}
+			col_dict = {'LASTNAME,FIRST' : 'CANDIDATENAME', 'GENERALRESULTS': 'GENERALVOTES', 'PRIMARYRESULTS' : 'PRIMARYVOTES', 'D' : 'DISTRICT', 'FECID#'  : 'FECID',
+						'(I)' : 'INCUMBENTINDICATOR', 'GERUNOFFELECTIONVOTES(LA)': 'GERUNOFFELECTIONVOTES'}
 
 			#Remove extraneous records
 			df_pg = self.pres_general
 			df_pp = self.pres_primary
 			df_house = self.house
 			df_sen = self.senate
-			df_pg.dropna(subset=,inplace= True)
-			df_pp.dropna(subset=,inplace= True)
-			df_house.dropna(subset=,inplace= True)
-			df_sen.dropna(subset=,inplace= True)
+			df_pg.dropna(subset=['PARTY', 'LASTNAME,FIRST'],inplace= True)
+			df_pg = df_pg[df_pg['PARTY'] != 'Combined Parties:']
+			df_pp.dropna(subset=['PARTY', 'LASTNAME,FIRST'],inplace= True)
+			df_house.dropna(subset=['PARTY', 'CANDIDATENAME'],inplace= True)
+			df_sen.dropna(subset=['PARTY', 'CANDIDATENAME'],inplace= True)
 			
 			#Rename Local columns
 			df_pg.rename(columns=col_dict,inplace=True)
@@ -516,17 +487,13 @@ class FECLoad(object):
 			df_sen.rename(columns=col_dict,inplace=True)
 
 			#Merge and append
-			merge_cols = []
+			merge_cols = ['FECID', 'STATE', 'STATEABBREVIATION','FIRSTNAME', 'LASTNAME', 'CANDIDATENAME', 'PARTY']
 			df = df_pg.merge(df_pp, how='outer', left_on = merge_cols, right_on=merge_cols)
 			df.loc[:, 'DISTRICT'] = 'President'
 			df = df.append(df_house,sort=True)
 			df= df.append(df_sen, sort= True)
 			
 			#Make sure numeric dtypes are numeric
-			df['GENERALVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['PRIMARYVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['RUNOFFVOTES'].replace(regex=r'\D+',value='',inplace=True)
-			df['GERUNOFFELECTIONVOTES'].replace(regex=r'\D+',value='',inplace=True)
 			df.loc[:,'GENERALVOTES'] = df['GENERALVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
 			df.loc[:,'RUNOFFVOTES'] = df['RUNOFFVOTES'].apply(pd.to_numeric, errors= 'coerce')
