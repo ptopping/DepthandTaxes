@@ -27,6 +27,7 @@ week8 = make_df(main(NFLSpread,'Week 8!A1:AE'))
 week9 = make_df(main(NFLSpread,'Week 9!A1:AE'))
 week10 = make_df(main(NFLSpread,'Week 10!A1:AE'))
 week11 = make_df(main(NFLSpread,'Week 11!A1:AE'))
+week12 = make_df(main(NFLSpread,'Week 12!A1:AE'))
 
 def main(SPREADSHEET_ID,RANGE_NAME):
     """Calls Google Sheets API.
@@ -45,45 +46,50 @@ def main(SPREADSHEET_ID,RANGE_NAME):
     values = result.get('values', [])
     return values
 
-def make_df(dataframe):
-    '''Creates a DataFrame of Passer Rating Components and performs a z transform
-    '''
-    df = dataframe
-    df = pd.DataFrame(df,columns=df[0])
-    df = df.iloc[1:]
-#     df['Cmp'] = df['Cmp'].astype('float')
-#     df['Att'] = df['Att'].astype('float')
-#     df['Yds'] = df['Yds'].astype('float')
-#     df['TD'] = df['TD'].astype('float')
-#     df['Int'] = df['Int'].astype('float')
-#     df['G'] = df['G'].astype('float')
-    df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']] = df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']].astype('float')
-#     df['CmpPct'] = df['Cmp']/df['Att']
-#     df['YardsPer'] = df['Yds']/df['Att']
-#     df['TDPct'] = df['TD']/df['Att']
-    df['IntPct'] = 1 - df['Int']/df['Att']
-    df['AttPer'] = df['Att']/df['G']
-    df[['CmpPct', 'YardsPer', 'TDPct', 'IntPct']] = df[['Cmp', 'Yds', 'TD']].div(df['Att'].values, axis=0)
-    df = df[['Name','Tm','Cmp','Att','Yds','TD','Int','AttPer','CmpPct','YardsPer','TDPct','IntPct']]
-    df['Wins'] = df['QBrec'].str.split('-',expand=False)[0]
-    df = df[['Name','Tm','Cmp','Att','Yds','TD','Int','AttPer','CmpPct','YardsPer','TDPct','IntPct','Wins']]
-    df['z_CmpPct'] = (df.CmpPct - df.CmpPct.mean())/df.CmpPct.std()
-    df['z_YardsPer'] = (df.YardsPer - df.YardsPer.mean())/df.YardsPer.std()
-    df['z_TDPct'] = (df.TDPct - df.TDPct.mean())/df.TDPct.std()
-    df['z_IntPct'] = (df.IntPct - df.IntPct.mean())/df.IntPct.std()
-    df['Above'] = (df[['z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]>=1).sum(1)
-    df['Below'] = (df[['z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]<=-1).sum(1)
-    df.loc[df['Above'] == 4, 'Cat'] = 'GOAT'
-    df.loc[df['Below'] == 4, 'Cat'] = 'Train'
-    df.loc[(df['Above'] == 0) & (df['Below'] == 0), 'Cat'] = 'Mediocre'
-    df.loc[(df['Above'] >= 1) & (df['Above'] <= 3) & (df['Below'] == 0), 'Cat'] = 'Good'
-    df.loc[(df['Above'] >= 1) & (df['Below'] >= 1), 'Cat'] = 'Mixed'
-    df.loc[(df['Above'] == 0) & (df['Below'] <= 3) & (df['Below'] >= 1), 'Cat'] = 'Bad'
-    df = df[['Name','Tm','Cat','Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]
-    df.reset_index(drop=True,inplace=True)
-    return df
+Class QBStats(object):
+	def __init__(self,SPREADSHEET_ID, RANGE_NAME):
+		self.SPREADSHEET_ID = SPREADSHEET_ID
+		self.RANGE_NAME = RANGE_NAME
+    
+	def zscore(dataframe):
+		'''Creates a DataFrame of Passer Rating Components and performs a z transform
+		'''
+		df = dataframe
+		df = pd.DataFrame(df,columns=df[0])
+		df = df.iloc[1:]
+	#     df['Cmp'] = df['Cmp'].astype('float')
+	#     df['Att'] = df['Att'].astype('float')
+	#     df['Yds'] = df['Yds'].astype('float')
+	#     df['TD'] = df['TD'].astype('float')
+	#     df['Int'] = df['Int'].astype('float')
+	#     df['G'] = df['G'].astype('float')
+		df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']] = df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']].astype('float')
+	#     df['CmpPct'] = df['Cmp']/df['Att']
+	#     df['YardsPer'] = df['Yds']/df['Att']
+	#     df['TDPct'] = df['TD']/df['Att']
+		df['IntPct'] = 1 - df['Int']/df['Att']
+		df['AttPer'] = df['Att']/df['G']
+		df[['CmpPct', 'YardsPer', 'TDPct', 'IntPct']] = df[['Cmp', 'Yds', 'TD']].div(df['Att'].values, axis=0)
+		df = df[['Name','Tm','Cmp','Att','Yds','TD','Int','AttPer','CmpPct','YardsPer','TDPct','IntPct']]
+		df['Wins'] = df['QBrec'].str.split('-',expand=False)[0]
+		df = df[['Name','Tm','Cmp','Att','Yds','TD','Int','AttPer','CmpPct','YardsPer','TDPct','IntPct','Wins']]
+		df['z_CmpPct'] = (df.CmpPct - df.CmpPct.mean())/df.CmpPct.std()
+		df['z_YardsPer'] = (df.YardsPer - df.YardsPer.mean())/df.YardsPer.std()
+		df['z_TDPct'] = (df.TDPct - df.TDPct.mean())/df.TDPct.std()
+		df['z_IntPct'] = (df.IntPct - df.IntPct.mean())/df.IntPct.std()
+		df['Above'] = (df[['z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]>=1).sum(1)
+		df['Below'] = (df[['z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]<=-1).sum(1)
+		df.loc[df['Above'] == 4, 'Cat'] = 'GOAT'
+		df.loc[df['Below'] == 4, 'Cat'] = 'Train'
+		df.loc[(df['Above'] == 0) & (df['Below'] == 0), 'Cat'] = 'Mediocre'
+		df.loc[(df['Above'] >= 1) & (df['Above'] <= 3) & (df['Below'] == 0), 'Cat'] = 'Good'
+		df.loc[(df['Above'] >= 1) & (df['Below'] >= 1), 'Cat'] = 'Mixed'
+		df.loc[(df['Above'] == 0) & (df['Below'] <= 3) & (df['Below'] >= 1), 'Cat'] = 'Bad'
+		df = df[['Name','Tm','Cat','Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]
+		df.reset_index(drop=True,inplace=True)
+		return df
 
-def make_spider(df):
+def spider(df):
     '''Creates faceted radar charts for Standardized Passing statistics
     '''
     df.reset_index(drop=True,inplace=True)
@@ -113,7 +119,7 @@ def make_spider(df):
     plt.tight_layout()
     g.savefig('{}.png'.format(df.iloc[0,3]))
 
-def rating_uniplot(df):
+def uniplot(df):
     sns.set_style('darkgrid')
     g = sns.FacetGrid(data=df, sharex=False, sharey=False)
     g.map(plt.hist, 'Rate')
@@ -131,7 +137,7 @@ def rating_uniplot(df):
     plt.tight_layout()
     g3.savefig('{}.png'.format()) #TODO
     
-def rating_biplot(df):
+def biplot(df):
     sns.set_style('darkgrid')
     df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
     df1.reset_index(inplace=True)
