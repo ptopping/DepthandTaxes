@@ -11,4 +11,4 @@ Census
 
 | YEAR | STATE | STATEABBREVIATION | DIVISION | WHITE | BLACK | HISPANIC | ASIAN | NATIVE | HAWAIIAN | MIXED |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Date [2000:2016] | [Alabama:Wyoming]  | Categorical [AL:WY] | [:] | INT | INT| INT | INT | INT | INT | INT |
+| Date [2000:2016] | [Alabama:Wyoming]  | [AL:WY] | [:] | INT | INT| INT | INT | INT | INT | INT |
