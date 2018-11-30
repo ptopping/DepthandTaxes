@@ -1,17 +1,18 @@
 import pandas as pd
 import numpy as np
+from DepthandTaxes.elections.headers import make_headers
 
-def make_headers(df,year):
-	'''Makes the first line of results dataframes the column headers
-	Inputs
-	df = election results dataframe
-	year = Election year
-	Outputs
-	Election results dataframe with new column headers''' 
-	df.rename(columns=df.iloc[0],inplace=True)
-	df.drop(df.index[0],inplace=True)
-	df.columns = df.columns.str.replace(' ','')
-	return df
+# def make_headers(df,year):
+# 	'''Makes the first line of results dataframes the column headers
+# 	Inputs
+# 	df = election results dataframe
+# 	year = Election year
+# 	Outputs
+# 	Election results dataframe with new column headers''' 
+# 	df.rename(columns=df.iloc[0],inplace=True)
+# 	df.drop(df.index[0],inplace=True)
+# 	df.columns = df.columns.str.replace(' ','')
+# 	return df
 
 class FECLoad(object):
 	"""Read_excel is set up without column headers as they vary from sheet to sheet
