@@ -1,18 +1,18 @@
 import pandas as pd
 import numpy as np
-from DepthandTaxes.elections.headers import make_headers
+# from DepthandTaxes.elections.headers import make_headers
 
-# def make_headers(df,year):
-# 	'''Makes the first line of results dataframes the column headers
-# 	Inputs
-# 	df = election results dataframe
-# 	year = Election year
-# 	Outputs
-# 	Election results dataframe with new column headers''' 
-# 	df.rename(columns=df.iloc[0],inplace=True)
-# 	df.drop(df.index[0],inplace=True)
-# 	df.columns = df.columns.str.replace(' ','')
-# 	return df
+def make_headers(df,year):
+	'''Makes the first line of results dataframes the column headers
+	Inputs
+	df = election results dataframe
+	year = Election year
+	Outputs
+	Election results dataframe with new column headers''' 
+	df.rename(columns=df.iloc[0],inplace=True)
+	df.drop(df.index[0],inplace=True)
+	df.columns = df.columns.str.replace(' ','')
+	return df
 
 class FECLoad(object):
 	"""Read_excel is set up without column headers as they vary from sheet to sheet
@@ -518,8 +518,35 @@ class FECLoad(object):
 
 		return df
 
+class ElectionAnalytics(object):
+	"""docstring for ElectionAnalytics"""
+	def __init__(self, df, office= 'President', parties= 3, election= 'general'):
+		self.df = df
+		self.party_dict
+		self.office = office
+		self.parties = parties
+		self.election = election
 
-class ElectionResults(object):
-	"""docstring for ElectionResults"""
-	def __init__(self, type='President'):
-		pass
+		if self.office = 'President':
+			self.future = {'MIDTERM' : pd.Series([0,0,0,0,0,0,0,0,0,0,0],
+						index=list(range(2000,2044,4))),
+						'DEMPRES' : pd.Series([1,0,0,1,1,0,0,0,0,0,0],
+						index=list(range(2000,2022,4)))}
+
+		else:
+			self.future = {'MIDTERM' : pd.Series([0,1,0,1,0,1,0,1,0,1,0],
+						index=list(range(2000,2022,2))),
+						'DEMPRES' : pd.Series([1,0,0,0,0,1,1,1,1,0,0],
+						index=list(range(2000,2022,2)))}
+
+		self.future_df = pd.DataFrame(self.future)
+
+	def pretty(self):
+		
+		df = df[[df['DISTRICT']==self.office]]
+		df.loc[:'PARTY'].replace(party_dict, inplace=True)
+
+		if parties == 3
+			df.loc[(df['PARTY'] != 'Republican') & (df['PARTY'] != 'Democratic'):'PARTY'] = 'Other'
+
+

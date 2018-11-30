@@ -1,2 +1,2 @@
-from elections.results import FECLoad
-from elections.census import CensusLoad
+from DepthandTaxes.elections.results import FECLoad
+from DepthandTaxes.elections.census import CensusLoad
