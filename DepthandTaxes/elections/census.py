@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 class CensusLoad(object):
-    """docstring for CensusData"""
+    """Creates DataFrame from Census PopEstimate csv"""
     def __init__(self, csv, kind='single'):
         self.csv = csv
         self.kind = kind
@@ -17,15 +17,15 @@ class CensusLoad(object):
         self.year_dict = {'CENSUS2010POP' : 2010, 'ESTIMATESBASE2000' : 2000, 'POPESTIMATE2001' : 2001, 'POPESTIMATE2002' : 2002, 'POPESTIMATE2003' : 2003, 'POPESTIMATE2004' : 2004, 
                         'POPESTIMATE2005' : 2005, 'POPESTIMATE2006' : 2006, 'POPESTIMATE2007' : 2007, 'POPESTIMATE2008' : 2008, 'POPESTIMATE2009' : 2009, 'POPESTIMATE2011' : 2011, 
                         'POPESTIMATE2012' : 2012, 'POPESTIMATE2013' : 2013, 'POPESTIMATE2014' : 2014, 'POPESTIMATE2015' : 2015, 'POPESTIMATE2016' : 2016, 'POPESTIMATE2017' : 2017}        
-        self.future = {'2020' : pd.Series([.0162,.0243,.0125,.0264,.0174,.0022,.0086,.0350,.0066], 
+        self.future = {'2020rate' : pd.Series([.0162,.0243,.0125,.0264,.0174,.0022,.0086,.0350,.0066], 
                     index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-                    '2030' : pd.Series([.0141,.0221,.0113,.0243,.0163,.0010,.0076,.0337,.0056],
+                    '2030rate' : pd.Series([.0141,.0221,.0113,.0243,.0163,.0010,.0076,.0337,.0056],
                     index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-                    '2040' : pd.Series([.0124,.0202,.0105,.0216,.0147,-.0001,.0066,.0319,.0046],
+                    '2040rate' : pd.Series([.0124,.0202,.0105,.0216,.0147,-.0001,.0066,.0319,.0046],
                     index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-                    '2050' : pd.Series([.0109,.0185,.0099,.0196,.0132,-.0010,.0058,.0304,.0037],
+                    '2050rate' : pd.Series([.0109,.0185,.0099,.0196,.0132,-.0010,.0058,.0304,.0037],
                     index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-                    '2060' : pd.Series([.0099,.0170,.0093,.0180,.0113,-.0015,.0052,.0290,.0032],
+                    '2060rate' : pd.Series([.0099,.0170,.0093,.0180,.0113,-.0015,.0052,.0290,.0032],
                     index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White'])}
         self.future_df = pd.DataFrame(self.future)
         self.col_list = ['NAME', 'DIVISION', 'RACE', 'CENSUS2010POP', 'POPESTIMATE2011', 'POPESTIMATE2012', 'POPESTIMATE2013', 'POPESTIMATE2014', 'POPESTIMATE2015', 'POPESTIMATE2016', 
@@ -34,13 +34,18 @@ class CensusLoad(object):
 
 
     def pretty(self):
+        #Instantiates and sets initial variables
         df = self.df
         kind = self.kind
+		
+		#Map categoricals to numerical index to prevent confusion
         df.REGION = df.REGION.map(self.region_dict).fillna(df.REGION)
         df.DIVISION = df.DIVISION.map(self.division_dict).fillna(df.DIVISION)
         df.SEX = df.SEX.map(self.sex_dict).fillna(df.SEX)
         df.ORIGIN = df.ORIGIN.map(self.origin_dict).fillna(df.ORIGIN)
         df.RACE = df.RACE.map(self.race_dict).fillna(df.RACE)
+		
+		#Currently two types 5-year and single-year age groups.  Single-year needs converting to 5-year
         if kind == 'single':
             df.SUMLEV = df.SUMLEV.map(self.sumlev_dict).fillna(df.SUMLEV)
             df.loc[df['AGE'] <= 4,'AGE'] = 1
@@ -62,7 +67,9 @@ class CensusLoad(object):
             df.loc[(df['AGE'] >= 80) & (df['AGE'] <= 84),'AGE'] = 17
             df.loc[(df['AGE'] >= 85),'AGE'] = 18
             df.rename(columns={'AGE' : 'AGEGRP'}, inplace=True)
-        hispanic = df[(df['ORIGIN'] == 'Hispanic') & (df['AGEGRP'] >= 5) & (df['SEX'] == 'Total') & (df['RACE'] != 0)]
+        
+		#Aggregate based on race groups
+		hispanic = df[(df['ORIGIN'] == 'Hispanic') & (df['AGEGRP'] >= 5) & (df['SEX'] == 'Total') & (df['RACE'] != 0)]
         hispanic = hispanic.pivot_table(values=hispanic.select_dtypes(include='number'),index=['NAME','DIVISION'],columns=['ORIGIN'],aggfunc=np.sum).stack(0)
         white = df[(df['ORIGIN'] == 'Not Hispanic') & (df['AGEGRP'] >= 5) & (df['SEX'] == 'Total') & (df['RACE'] == 'White')]
         white = white.pivot_table(values=white.select_dtypes(include='number'),index=['NAME','DIVISION'],columns=['RACE'],aggfunc=np.sum).stack(0)
@@ -76,54 +83,40 @@ class CensusLoad(object):
         hawaii = hawaii.pivot_table(values=hawaii.select_dtypes(include='number'),index=['NAME','DIVISION'],columns=['RACE'],aggfunc=np.sum).stack(0)
         multi = df[(df['ORIGIN'] == 'Not Hispanic') & (df['AGEGRP'] >= 5) & (df['SEX'] == 'Total') & (df['RACE'] == 'Multi')]
         multi = multi.pivot_table(values=multi.select_dtypes(include='number'),index=['NAME','DIVISION'],columns=['RACE'],aggfunc=np.sum).stack(0)
-        df = hispanic.merge(white,how='left',left_index=True,right_index=True)
+        
+		#Merge race tables
+		df = hispanic.merge(white,how='left',left_index=True,right_index=True)
         for race in [black,indian,asian,hawaii,multi]:
             df = df.merge(race,how='left',left_index=True,right_index=True)
         df = df.unstack(2).stack(0).reset_index().rename(columns={'level_2' : 'RACE'})
         df.columns = df.columns.str.upper()
-        #Select wanted columns
+        
+		#Select wanted columns
         cols = [c for c in self.col_list if c in df.columns]
         df = df[cols]
-        df.rename(columns= self.year_dict, inplace= True)        
+        
+		#Rename and reshape table
+		df.rename(columns= self.year_dict, inplace= True)        
         df.rename(columns= {'NAME': 'STATE'}, inplace= True)
         df = df.melt(id_vars=['STATE', 'DIVISION', 'RACE'])
         df.rename(columns={'value' : 'POPULATION', 'variable': 'YEAR'}, inplace=True)
         return df
 
         def projection(self):
-            pass
-
-
-def popprojection(df):
-    census_year = {'Census2010Pop' : 2010, 'Estimatesbase2000' : 2000, 'Popestimate2001' : 2001, 'Popestimate2002' : 2002, 'Popestimate2003' : 2003,
-    'Popestimate2004' : 2004, 'Popestimate2005' : 2005, 'Popestimate2006' : 2006, 'Popestimate2007' : 2007, 'Popestimate2008' : 2008, 'Popestimate2009' : 2009,
-    'Popestimate2011' : 2011, 'Popestimate2012' : 2012, 'Popestimate2013' : 2013, 'Popestimate2014' : 2014, 'Popestimate2015' : 2015, 'Popestimate2016' : 2016,
-    'Popestimate2017' : 2017, 'POPESTIMATE2018' : 2018, 'POPESTIMATE2020' : 2020, 'POPESTIMATE2024' : 2024, 'POPESTIMATE2028' : 2028,
-    'POPESTIMATE2032' : 2032, 'POPESTIMATE2036' : 2036, 'POPESTIMATE2040' : 2040}
-    future = {'2020' : pd.Series([.0162,.0243,.0125,.0264,.0174,.0022,.0086,.0350,.0066],
-    index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-    '2030' : pd.Series([.0141,.0221,.0113,.0243,.0163,.0010,.0076,.0337,.0056],
-    index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-    '2040' : pd.Series([.0124,.0202,.0105,.0216,.0147,-.0001,.0066,.0319,.0046],
-    index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-    '2050' : pd.Series([.0109,.0185,.0099,.0196,.0132,-.0010,.0058,.0304,.0037],
-    index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White']),
-    '2060' : pd.Series([.0099,.0170,.0093,.0180,.0113,-.0015,.0052,.0290,.0032],
-    index=['American Indian','Asian','Black','Hispanic','Native Hawaiian','White','One Race','Multi','All White'])}
-    future_df = pd.DataFrame(future)
-    cols = census_year.keys()
-    cols.extend(['Name','Race','Division'])
-    df = df.merge(future_df,how='left',left_on='Race',right_index=True)
-    df['POPESTIMATE2018'] = df['Popestimate2017'] * (1+df['2020'])**(2018-2017)
-    df['POPESTIMATE2020'] = df['Popestimate2017'] * (1+df['2020'])**(2020-2017)
-    df['POPESTIMATE2024'] = df['Popestimate2017'] * (1+df['2030'])**(2024-2017)
-    df['POPESTIMATE2028'] = df['Popestimate2017'] * (1+df['2030'])**(2028-2017)
-    df['POPESTIMATE2032'] = df['Popestimate2017'] * (1+df['2040'])**(2032-2017)
-    df['POPESTIMATE2036'] = df['Popestimate2017'] * (1+df['2040'])**(2036-2017)
-    df['POPESTIMATE2040'] = df['Popestimate2017'] * (1+df['2040'])**(2040-2017)
-    df = df[cols]
-    df = df.rename(columns=census_year)
-    df = df.melt(id_vars=['Name','Race','Division']).pivot_table(index=['Name','Division','variable'],columns='Race',values='value')
-    df = df.reset_index().rename(columns={'variable':'YEAR','Name' : 'State'})
-    df.columns = df.columns.str.title()
-    return df
+            #Create initial dataframe
+			df = pretty(self.df)
+			#Reshape dataframe
+			#Merge future dataframe
+			#Calculate future population estimates
+			df = df.merge(future_df,how='left',left_on='Race',right_index=True)
+			df['POPESTIMATE2018'] = df[df.columns[-1]] * (1+df['2020rate'])**(2018-df.columns[-1])
+			df['POPESTIMATE2020'] = df[df.columns[-1]] * (1+df['2020rate'])**(2020-df.columns[-1])
+			df['POPESTIMATE2024'] = df[df.columns[-1]] * (1+df['2030rate'])**(2024-df.columns[-1])
+			df['POPESTIMATE2028'] = df[df.columns[-1]] * (1+df['2030rate'])**(2028-df.columns[-1])
+			df['POPESTIMATE2032'] = df[df.columns[-1]] * (1+df['2040rate'])**(2032-df.columns[-1])
+			df['POPESTIMATE2036'] = df[df.columns[-1]] * (1+df['2040rate'])**(2036-df.columns[-1])
+			df['POPESTIMATE2040'] = df[df.columns[-1]] * (1+df['2040rate'])**(2040-df.columns[-1])
+			df = df.melt(id_vars=['Name','Race','Division']).pivot_table(index=['Name','Division','variable'],columns='Race',values='value')
+			df = df.reset_index().rename(columns={'variable':'YEAR','Name' : 'State'})
+			df.columns = df.columns.str.title()
+			return df
