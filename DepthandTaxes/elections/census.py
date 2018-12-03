@@ -8,30 +8,24 @@ class CensusLoad(object):
 		self.kind = kind
 		self.df = pd.read_csv('C:\\Users\\ptopp\\Documents\\DATFiles\\{csv}.csv'.format(csv=csv))
 		self.region_dict = {0: 'United States Total', 1: 'Northeast', 2: 'Midwest', 3: 'South', 4: 'West'}
-		self.division_dict = {0: 'United States Total', 1: 'New England', 2: 'Middle Atlantic', 3: 'East North Central', 4: 'West North Central', 5: 'South Atlantic', 6: 'East South Central', 7: 'West South Central',
-							8: 'Mountain', 9: 'Pacific'} 
+		self.division_dict = {0: 'United States Total', 1: 'New England', 2: 'Middle Atlantic', 3: 'East North Central', 4: 'West North Central', 5: 'South Atlantic', 6: 'East South Central', 
+		7: 'West South Central', 8: 'Mountain', 9: 'Pacific'} 
 		self.sex_dict = {0: 'Total', 1: 'Male', 2: 'Female'}
 		self.origin_dict = {0: 'Total', 1: 'Not Hispanic', 2: 'Hispanic'}
 		self.race_dict = {1: 'White', 2: 'Black', 3: 'Native', 4: 'Asian', 5: 'Hawaiian', 6: 'Multi'}
 		self.sumlev_dict = {40: 'STATE'}
 		self.year_dict = {'CENSUS2010POP' : 2010, 'ESTIMATESBASE2000' : 2000, 'POPESTIMATE2001' : 2001, 'POPESTIMATE2002' : 2002, 'POPESTIMATE2003' : 2003, 'POPESTIMATE2004' : 2004, 
-						'POPESTIMATE2005' : 2005, 'POPESTIMATE2006' : 2006, 'POPESTIMATE2007' : 2007, 'POPESTIMATE2008' : 2008, 'POPESTIMATE2009' : 2009, 'POPESTIMATE2011' : 2011, 
-						'POPESTIMATE2012' : 2012, 'POPESTIMATE2013' : 2013, 'POPESTIMATE2014' : 2014, 'POPESTIMATE2015' : 2015, 'POPESTIMATE2016' : 2016, 'POPESTIMATE2017' : 2017}        
-		self.future = {'2020rate' : pd.Series([.0162,.0243,.0125,.0264,.0174,.0022,.0086,.0350,.0066],
-						index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
-						'2030rate' : pd.Series([.0141,.0221,.0113,.0243,.0163,.0010,.0076,.0337,.0056],
-						index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
-						'2040rate' : pd.Series([.0124,.0202,.0105,.0216,.0147,-.0001,.0066,.0319,.0046],
-						index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
-						'2050rate' : pd.Series([.0109,.0185,.0099,.0196,.0132,-.0010,.0058,.0304,.0037],
-						index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
-						'2060rate' : pd.Series([.0099,.0170,.0093,.0180,.0113,-.0015,.0052,.0290,.0032],
-						index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White'])}
+		'POPESTIMATE2005' : 2005, 'POPESTIMATE2006' : 2006, 'POPESTIMATE2007' : 2007, 'POPESTIMATE2008' : 2008, 'POPESTIMATE2009' : 2009, 'POPESTIMATE2011' : 2011, 'POPESTIMATE2012' : 2012, 
+		'POPESTIMATE2013' : 2013, 'POPESTIMATE2014' : 2014, 'POPESTIMATE2015' : 2015, 'POPESTIMATE2016' : 2016, 'POPESTIMATE2017' : 2017}        
+		self.future = {'2020rate' : pd.Series([.0162,.0243,.0125,.0264,.0174,.0022,.0086,.0350,.0066], index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
+		'2030rate' : pd.Series([.0141,.0221,.0113,.0243,.0163,.0010,.0076,.0337,.0056],	index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
+		'2040rate' : pd.Series([.0124,.0202,.0105,.0216,.0147,-.0001,.0066,.0319,.0046], index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
+		'2050rate' : pd.Series([.0109,.0185,.0099,.0196,.0132,-.0010,.0058,.0304,.0037], index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White']),
+		'2060rate' : pd.Series([.0099,.0170,.0093,.0180,.0113,-.0015,.0052,.0290,.0032], index=['Native','Asian','Black','Hispanic','Hawaiian','White','One Race','Multi','All White'])}
 		self.future_df = pd.DataFrame(self.future)
 		self.col_list = ['NAME', 'DIVISION', 'RACE', 'CENSUS2010POP', 'POPESTIMATE2011', 'POPESTIMATE2012', 'POPESTIMATE2013', 'POPESTIMATE2014', 'POPESTIMATE2015', 'POPESTIMATE2016', 
-						'POPESTIMATE2017', 'ESTIMATESBASE2000', 'POPESTIMATE2001', 'POPESTIMATE2002', 'POPESTIMATE2003', 'POPESTIMATE2004', 'POPESTIMATE2005', 'POPESTIMATE2006', 'POPESTIMATE2007',
-						'POPESTIMATE2008', 'POPESTIMATE2009']
-
+		'POPESTIMATE2017', 'ESTIMATESBASE2000', 'POPESTIMATE2001', 'POPESTIMATE2002', 'POPESTIMATE2003', 'POPESTIMATE2004', 'POPESTIMATE2005', 'POPESTIMATE2006', 'POPESTIMATE2007', 'POPESTIMATE2008', 
+		'POPESTIMATE2009']
 
 	def pretty(self):
 		#Instantiates and sets initial variables
