@@ -1,18 +1,21 @@
 import pandas as pd
 import numpy as np
-from DepthandTaxes.elections.headers import make_headers
+import math
+from sklearn.linear_model import LassoCV
+from sklearn.metrics import mean_squared_error
+# from DepthandTaxes.elections.headers import make_headers
 
-# def make_headers(df,year):
-# 	'''Makes the first line of results dataframes the column headers
-# 	Inputs
-# 	df = election results dataframe
-# 	year = Election year
-# 	Outputs
-# 	Election results dataframe with new column headers''' 
-# 	df.rename(columns=df.iloc[0],inplace=True)
-# 	df.drop(df.index[0],inplace=True)
-# 	df.columns = df.columns.str.replace(' ','')
-# 	return df
+def make_headers(df,year):
+	'''Makes the first line of results dataframes the column headers
+	Inputs
+	df = election results dataframe
+	year = Election year
+	Outputs
+	Election results dataframe with new column headers''' 
+	df.rename(columns=df.iloc[0],inplace=True)
+	df.drop(df.index[0],inplace=True)
+	df.columns = df.columns.str.replace(' ','')
+	return df
 
 class FECLoad(object):
 	"""Read_excel is set up without column headers as they vary from sheet to sheet
@@ -30,17 +33,16 @@ class FECLoad(object):
 # 		self.results_cleanup = {'*' : np.nan, 'Unopposed' : np.nan, ' ' : np.nan, '**' : np.nan, 'WINNER' : np.nan, '  ' : np.nan, '#' : np.nan, 'Winner' : np.nan, 'Unopposed   ': np.nan,
 # 								'Withdrew -- after primary?': np.nan, 'Withdrew' : np.nan, 'Loser' : np.nan, '??' : np.nan, '?' : np.nan, 'C': np.nan, 'Winner*' : np.nan, 'Unopposed (R)' : np.nan,
 # 								'Unopposed (C)': np.nan, '##': np.nan}
-		self.col_list = ['YEAR', 'STATE', 'STATEABBREVIATION', 'DISTRICT', 'FECID', 'INCUMBENTINDICATOR', 'CANDIDATENAME', 'PARTY', 'PRIMARYVOTES', 'RUNOFFVOTES', 'GENERALVOTES', 'GERUNOFFELECTIONVOTES',
-						 'GENERALELECTIONDATE', 'PRIMARYDATE']
+		self.col_list = ['YEAR', 'STATE', 'STATEABBREVIATION', 'DISTRICT', 'FECID', 'INCUMBENTINDICATOR', 'CANDIDATENAME', 'PARTY', 'PRIMARYVOTES', 'RUNOFFVOTES', 'GENERALVOTES', 
+		'GERUNOFFELECTIONVOTES', 'GENERALELECTIONDATE', 'PRIMARYDATE']
 		self.senate_dict = {'S' : 'Senator', 'S - FULL TERM' : 'Senator', 'S - UNEXPIRED TERM' : 'Senator', 'SFULL' : 'Senator', 'SUN' : 'Senator', 'S - Unexpired Term': 'Senator', 
-							'S  - FULL TERM': 'Senator', 'S-UNEXPIRED TERM': 'Senator', 'S   (Full Term)': 'Senator', 'S   (Unexpired Term)': 'Senator'}
-		self.postal_codes = {'AL': 'Alabama', 'AK': 'Alaska', 'AS': 'American Samoa', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
-							'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'GU': 'Guam', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
-							'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
-							'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota',
-							'MP': 'Northern Mariana Islands', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota',
-							'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'VI': 'Virgin Islands', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin',
-							'WY': 'Wyoming'}
+		'S  - FULL TERM': 'Senator', 'S-UNEXPIRED TERM': 'Senator', 'S   (Full Term)': 'Senator', 'S   (Unexpired Term)': 'Senator'}
+		self.postal_codes = {'AL': 'Alabama', 'AK': 'Alaska', 'AS': 'American Samoa', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 
+		'DE': 'Delaware', 'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'GU': 'Guam', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 
+		'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 
+		'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 
+		'MP': 'Northern Mariana Islands', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota', 
+		'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'VI': 'Virgin Islands', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'}
 
 		#Check election year
 		if year == 2016:
@@ -150,8 +152,10 @@ class FECLoad(object):
 		if year == 2000:
 			#Create label cleanup dictionaries
 			party_dict = {'I(GRN)' : 'GRN', 'I(LBT)' : 'LBT', 'I(REF)' : 'REF', 'I(I)' : 'I', 'I(SOC)' : 'SOC', 'I(CON)' : 'CON', 'I(SWP)' : 'SWP', 'PRO/GRN' : 'PRO', 'W(D)' : 'D', 'W(R)' : 'R', 
-			'W(GRN)' : 'GRN', 'W(REF)' : 'REF', 'W(N)' : 'N', 'UN(R)' : 'R', 'UN(D)' : 'D', 'W(LBT)' : 'LBT', 'N(D)' : 'D', 'N(R)' : 'R', '(N)LBT' : 'LBT', '(N)NL' : 'NL', 'I(TG)' : 'TG', 'I(GBJ)' : 'GBJ', 
-			'I(NJC)' : 'NJC', 'W(IDP)' : 'IDP', 'W(RTL)' : 'RTL', 'W(CON)' : 'CON', 'W(WG)' : 'WG'}
+			'W(GRN)' : 'GRN', 'W(REF)' : 'REF', 'W(N)' : 'N', 'UN(R)' : 'R', 'UN(D)' : 'D', 'W(LBT)' : 'LBT', 'N(D)' : 'D', 'N(R)' : 'R', '(N)LBT' : 'LBT', '(N)NL' : 'NL', 'I(TG)' : 'TG', 
+			'I(GBJ)' : 'GBJ', 'I(NJC)' : 'NJC', 'W(IDP)' : 'IDP', 'W(RTL)' : 'RTL', 'W(CON)' : 'CON', 'W(WG)' : 'WG', 'W(D)/R': 'D', 'U(LBT)' : 'LBT', 'N(LBT)': 'LBT', 'I(LMP)': 'LMP', 
+			'I(UC)': 'UC', 'I(NJI)': 'NJI', 'I(NL)': 'NL', 'I(IPR)': 'IPR', 'I(ICE)' : 'ICE', 'I(PC)' : 'PC', 'W(G)': 'G', 'W(C)': 'C', 'W(GRN)/GRN': 'GRN', 'W(WF)/WF' : 'WF', 'W(NL)': 'NL', 
+			'W(R)/R': 'R', 'D/R': 'D', 'I(CFC)': 'CFC', 'D/LU': 'D', 'W/LBT': 'LBT', 'W(DCG)': 'DCG', 'W(UM)': 'UM'}
 
 			if is_pres == True:
 				if is_primary == False:			
@@ -182,7 +186,10 @@ class FECLoad(object):
 			
 					#Make sure numeric dtypes are numeric
 					df.loc[:,'PRIMARYVOTES'] = df['PRIMARYVOTES'].apply(pd.to_numeric, errors= 'coerce')
-			
+
+					#Aggregate the Vote
+					df = df.groupby(['STATEABBREVIATION', 'CANDIDATENAME', 'PARTY']).sum().reset_index()			
+
 				#Add needed columns
 				df.loc[:,'YEAR'] = year #TODO unmangle 2000 Presidential Primary dates
 				df.loc[:, 'DISTRICT'] = 'President'
@@ -230,9 +237,9 @@ class FECLoad(object):
 		elif year == 2002:
 			#Create local dictionaries
 			party_dict = {'W(D)' : 'D','W(LBT)/LBT' : 'LBT', 'W(LBT)' : 'LBT', 'R/W' : 'R', 'W(R)' : 'R', 'W(DCG)' : 'DCG', 'W(IG)' : 'IG', 'W(GRN)' : 'GRN', 'W(R)/W' : 'R', 'DFL/W' : 'DFL', 
-			'GRN/W' : 'GRN', 'N(R)' : 'R', 'N(D)' : 'D', 'N(LBT)' : 'LBT', 'I(GRN)' : 'GRN', 'I(LBT)' : 'LBT', 'I(NJC)' : 'NJC', 'I(SOC)' : 'SOC', 'I(AF)' : 'AF', 'I(HHD)' : 'HHD', 'I(LTI)' : 'LTI', 
-			'I(HRA)' : 'HRA', 'I(AM,AC)' : 'AM', 'I(PLC)' : 'PLC', 'I(PC)' : 'PC', 'W(C)' : 'C', 'W(RTL)/RTL' : 'RTL', 'W(RTL)' : 'RTL', 'I(HP)' : 'HP', 'PROANDLU/PRO' : 'PRO', 'W(PRO)' : 'PRO',
-			'RandR/D' : 'R', 'W(WG)' : 'WG', 'W(CON)' : 'CON'}
+			'GRN/W' : 'GRN', 'N(R)' : 'R', 'N(D)' : 'D', 'N(LBT)' : 'LBT', 'I(GRN)' : 'GRN', 'I(LBT)' : 'LBT', 'I(NJC)' : 'NJC', 'I(SOC)' : 'SOC', 'I(AF)' : 'AF', 'I(HHD)' : 'HHD', 
+			'I(LTI)' : 'LTI', 'I(HRA)' : 'HRA', 'I(AM,AC)' : 'AM', 'I(PLC)' : 'PLC', 'I(PC)' : 'PC', 'W(C)' : 'C', 'W(RTL)/RTL' : 'RTL', 'W(RTL)' : 'RTL', 'I(HP)' : 'HP', 'PROANDLU/PRO' : 'PRO', 
+			'W(PRO)' : 'PRO', 'RandR/D' : 'R', 'W(WG)' : 'WG', 'W(CON)' : 'CON'}
 			col_dict = {'STATE' : 'STATEABBREVIATION', 'LASTNAME,FIRST' : 'CANDIDATENAME', 'PRIMARYRESULTS' : 'PRIMARYVOTES', 'RUNOFFRESULTS' : 'RUNOFFVOTES', 'GENERALRESULTS' : 'GENERALVOTES', 
 			'GENERALRUNOFFRESULTS' : 'GERUNOFFELECTIONVOTES'}
 
@@ -240,8 +247,9 @@ class FECLoad(object):
 			df = self.congress
 			df.dropna(subset=['PARTY'],how='any',inplace=True)
 			df = df[df['TOTALVOTES'] != 'Total Party Votes:']
-			df = df[(df['PARTY'] != 'D/WF') & (df['PARTY'] != 'R/IDP/C/RTL') & (df['PARTY'] != 'D/IDP/WF') & (df['PARTY'] != 'R/C/RTL') & (df['PARTY'] != 'R/C/IDP/RTL') & (df['PARTY'] != 'D/IDP/L/WF')
-			& (df['PARTY'] != 'D/L/WF') & (df['PARTY'] != 'R/C') & (df['PARTY'] != 'R/IDP') & (df['PARTY'] != 'D/L') & (df['PARTY'] != 'R/IDP/C') & (df['PARTY'] != 'D/IDP/C/WF') & (df['PARTY'] != 'D/UC')]
+			df = df[(df['PARTY'] != 'D/WF') & (df['PARTY'] != 'R/IDP/C/RTL') & (df['PARTY'] != 'D/IDP/WF') & (df['PARTY'] != 'R/C/RTL') & (df['PARTY'] != 'R/C/IDP/RTL') 
+			& (df['PARTY'] != 'D/IDP/L/WF')	& (df['PARTY'] != 'D/L/WF') & (df['PARTY'] != 'R/C') & (df['PARTY'] != 'R/IDP') & (df['PARTY'] != 'D/L') & (df['PARTY'] != 'R/IDP/C') & 
+			(df['PARTY'] != 'D/IDP/C/WF') & (df['PARTY'] != 'D/UC')]
 
 			#Rename Local columns
 			df.rename(columns=col_dict,inplace=True)
@@ -329,9 +337,9 @@ class FECLoad(object):
 
 		elif year == 2008:
 			#Create label cleanup dictionaries
-			party_dict = {'W(D)' : 'D', 'W(R)' : 'R', 'W(AIP)' : 'AIP', 'W(LIB)' : 'LIB', 'W(DCG)' : 'DCG', 'W(LU)' : 'LU', 'W(LBT)/LBT' : 'LBT', 'W(LBT)/W' : 'LBT', 'D/W' : 'D', 'NPA*' : 'NPA',
-       		'W(D)/W' : 'D', 'R/W' : 'R', 'W(GR)' : 'GR', 'W(WF)' : 'WF', 'N(R)' : 'R', 'N(D)' : 'D', 'N(NB)' : 'NB', 'N(GRE)' : 'GRE', 'W(CON)' : 'CON', 'W(LBT)' : 'LBT', 'R/IP#' :'R','D/IP' : 'D', 
-       		'W(R)/R' : 'R', 'W(NPP)'  :'NPP', 'W(LBT)/I' : 'LBT', 'W(R)/W' : 'R', 'D/R' : 'D', 'W(WG)' : 'WG'}
+			party_dict = {'W(D)' : 'D', 'W(R)' : 'R', 'W(AIP)' : 'AIP', 'W(LIB)' : 'LIB', 'W(DCG)' : 'DCG', 'W(LU)' : 'LU', 'W(LBT)/LBT' : 'LBT', 'W(LBT)/W' : 'LBT', 'D/W' : 'D', 
+			'NPA*' : 'NPA', 'W(D)/W' : 'D', 'R/W' : 'R', 'W(GR)' : 'GR', 'W(WF)' : 'WF', 'N(R)' : 'R', 'N(D)' : 'D', 'N(NB)' : 'NB', 'N(GRE)' : 'GRE', 'W(CON)' : 'CON', 'W(LBT)' : 'LBT', 
+			'R/IP#' :'R','D/IP' : 'D', 'W(R)/R' : 'R', 'W(NPP)'  :'NPP', 'W(LBT)/I' : 'LBT', 'W(R)/W' : 'R', 'D/R' : 'D', 'W(WG)' : 'WG', 'W(PRO)': 'PRO'}
 			col_dict = {'LASTNAME,FIRST' : 'CANDIDATENAME', 'GENERALRESULTS' : 'GENERALVOTES', 'PRIMARYRESULTS' : 'PRIMARYVOTES', 'RUNOFF' : 'RUNOFFVOTES', 'GERUNOFF' : 'GERUNOFFELECTIONVOTES', 
 			'PRIMARY' : 'PRIMARYVOTES', 'GENERAL' : 'GENERALVOTES', 'FECID#' : 'FECID', 'INCUMBENTINDICATOR(I)' : 'INCUMBENTINDICATOR'}
 
@@ -367,16 +375,16 @@ class FECLoad(object):
 		elif year == 2010:
 			#Create local dictionaries
 			party_dict = {'REP/W***' : 'REP', 'W(LIB)/LIB': 'LIB', 'W(LIB)': 'LIB', 'W(GRE)/GRE': 'GRE', 'W(GRE)': 'GRE', 'W(DEM)': 'DEM', 'W(AIP)': 'AIP', 'W(REP)': 'REP', 'W(REP)/REP': 'REP', 
-						'DEM/W': 'DEM', 'DEM/IND': 'DEM', 'W(DCG)': 'DCG', 'W(DEM': 'DEM', 'REP/W': 'REP', 'W(REP)/W': 'REP', 'W(DEM)/DEM': 'DEM', 'DFL': 'DFL', 'N(REP)': 'REP', 
-						'N(DEM)': 'DEM', 'W(CRV)': 'CRV', 'REP/TRP': 'REP', 'CRV/TX': 'CRV', 'APP/LIB': 'APP', 'W(DNL)': 'DNL', 'W(CON)/CON': 'CON', 'PG/PRO': 'PG', 'LIB/IP*': 'LIB', 'IP*': 'IP', 
-						'W(IP)*': 'IP', 'DEM/PRO/WF': 'DEM', 'REP/CON/IP*': 'REP', 'REP/IP*': 'REP', 'W(PRO)': 'PRO', 'W(WG)': 'WG'}
+			'DEM/W': 'DEM', 'DEM/IND': 'DEM', 'W(DCG)': 'DCG', 'W(DEM': 'DEM', 'REP/W': 'REP', 'W(REP)/W': 'REP', 'W(DEM)/DEM': 'DEM', 'DFL': 'DFL', 'N(REP)': 'REP', 'N(DEM)': 'DEM', 
+			'W(CRV)': 'CRV', 'REP/TRP': 'REP', 'CRV/TX': 'CRV', 'APP/LIB': 'APP', 'W(DNL)': 'DNL', 'W(CON)/CON': 'CON', 'PG/PRO': 'PG', 'LIB/IP*': 'LIB', 'IP*': 'IP', 'W(IP)*': 'IP', 
+			'DEM/PRO/WF': 'DEM', 'REP/CON/IP*': 'REP', 'REP/IP*': 'REP', 'W(PRO)': 'PRO', 'W(WG)': 'WG'}
 			col_dict = {'FECID#' : 'FECID', 'INCUMBENTINDICATOR(I)' : 'INCUMBENTINDICATOR', 'CANDIDATENAME(Last,First)' : 'CANDIDATENAME', 'PRIMARY': 'PRIMARYVOTES', 'RUNOFF': 'RUNOFFVOTES',
-						'GENERAL': 'GENERALVOTES'}
+			'GENERAL': 'GENERALVOTES'}
 			
 			#Remove extraneous records
 			df = self.congress
 			df.dropna(subset=['PARTY', 'CANDIDATENAME(Last,First)'],how='any',inplace=True)
-			df = df[df['RUNOFF'] != 'Combined Parties:']
+			df = df[(df['RUNOFF'] != 'Combined Parties:') & (df['PARTY'] != 'W(ChallengedNOTCounted)')]
 
 			#Rename Local columns
 			df.rename(columns=col_dict,inplace=True)
@@ -392,10 +400,10 @@ class FECLoad(object):
 		elif year == 2012:
 			#Create label cleanup dictionaries
 			party_dict = {'W(D)': 'D', 'W(R)': 'R', 'W(AIP)': 'AIP', 'W(DCG)': 'DCG', 'W(GR)': 'GR', 'W(LIB)/LIB': 'LIB', 'W(AE)/AE': 'AE', 'W(GRE)/GRE': 'GRE', 'W(R)/R': 'R', 'W(PAF)': 'PAF', 
-						'W(LIB)': 'LIB', 'D*': 'D', 'R*': 'R', 'W(IND)': 'IND', 'D/W': 'D', 'W(D)/D': 'D', 'W(R)/W': 'R', 'N(R)': 'R', 'N(D)': 'D', 'R/TRP' : 'R', 'CRV/LIB' : 'CRV', 'W(DNL)': 'DNL', 
-						'W(CON)': 'CON', 'W(GRE)': 'GRE', 'D/WF': 'D', 'LIB/PG/PRO': 'LIB', 'PG/PRO': 'PG', 'D/PRO/WF': 'D', 'R/CON': 'R', 'W(PRO)': 'PRO', 'D/IND': 'D', 'W(AE)': 'AE'}
+			'W(LIB)': 'LIB', 'D*': 'D', 'R*': 'R', 'W(IND)': 'IND', 'D/W': 'D', 'W(D)/D': 'D', 'W(R)/W': 'R', 'N(R)': 'R', 'N(D)': 'D', 'R/TRP' : 'R', 'CRV/LIB' : 'CRV', 'W(DNL)': 'DNL', 
+			'W(CON)': 'CON', 'W(GRE)': 'GRE', 'D/WF': 'D', 'LIB/PG/PRO': 'LIB', 'PG/PRO': 'PG', 'D/PRO/WF': 'D', 'R/CON': 'R', 'W(PRO)': 'PRO', 'D/IND': 'D', 'W(AE)': 'AE'}
 			col_dict = {'D' : 'DISTRICT', 'FECID#': 'FECID', '(I)': 'INCUMBENTINDICATOR', 'GERUNOFFELECTIONVOTES(LA)': 'GERUNOFFELECTIONVOTES', 'LASTNAME,FIRST': 'CANDIDATENAME', 
-						'GENERALRESULTS': 'GENERALVOTES', 'PRIMARYRESULTS': 'PRIMARYVOTES'}
+			'GENERALRESULTS': 'GENERALVOTES', 'PRIMARYRESULTS': 'PRIMARYVOTES'}
 
 			#Remove extraneous records
 			df_pg = self.pres_general
@@ -406,9 +414,9 @@ class FECLoad(object):
 			df_pp.dropna(subset=['PARTY', 'LASTNAME,FIRST'],how='any',inplace=True)
 			df_con.dropna(subset=['PARTY', 'CANDIDATENAME'],how='any',inplace=True)
 			df_con = df_con[(df_con['PARTY'] != 'D/WF Combined Parties') & (df_con['PARTY'] != 'R/CRV/IDP Combined Parties') & (df_con['PARTY'] != 'R/CRV/IDP/TRP Combined Parties') &
-					(df_con['PARTY'] != 'D/WF/IDP Combined Parties') & (df_con['PARTY'] != 'R/CRV/TRP Combined Parties') & (df_con['PARTY'] != 'D/IDP/WF Combined Parties') & 
-					(df_con['PARTY'] != 'R/TRP Combined Parties') & (df_con['PARTY'] != 'R/CRV Combined Parties') & (df_con['PARTY'] != 'R/IDP Combined Parties') & 
-					(df_con['PARTY'] != 'R/CRV/LIB Combined Parties')]
+			(df_con['PARTY'] != 'D/WF/IDP Combined Parties') & (df_con['PARTY'] != 'R/CRV/TRP Combined Parties') & (df_con['PARTY'] != 'D/IDP/WF Combined Parties') & 
+			(df_con['PARTY'] != 'R/TRP Combined Parties') & (df_con['PARTY'] != 'R/CRV Combined Parties') & (df_con['PARTY'] != 'R/IDP Combined Parties') 
+			& (df_con['PARTY'] != 'R/CRV/LIB Combined Parties')]
 
 			#Rename Local columns
 			df_pg.rename(columns=col_dict,inplace=True)
@@ -434,8 +442,8 @@ class FECLoad(object):
 		elif year == 2014:
 			#Create label cleanup dictionaries
 			party_dict = {'W(LIB)/LIB': 'LIB', 'W(AE)/AE': 'AE', 'W(NOP)': 'NOP', 'W(AIP)': 'AIP', 'W(R)': 'R', 'W(LIB)': 'LIB', 'W(PAF)/PAF': 'PAF', 'W(D)': 'D', 'W(DCG)': 'DCG', 'R/W': 'R', 
-						'D/W': 'D', 'N(D)': 'D', 'N(R)': 'R', 'N(LIB)': 'LIB', 'W(R)/R': 'R', 'R/TRP': 'R', 'CRV/LIB': 'CRV', 'W(DNL)': 'DNL', 'D/WF*': 'D', 'R/CON*': 'R', 'PRO/PG': 'PRO', 
-						'R/CON*/IP*': 'R', 'D/PRO/WF*': 'D', 'W(LBU)': 'LBU', 'W(PRO)': 'PRO', 'W(CON)': 'CON', 'W(R)/W': 'R', 'N(DEM)': 'DEM', 'DEM/IP/PRO/WF': 'DEM'}
+			'D/W': 'D', 'N(D)': 'D', 'N(R)': 'R', 'N(LIB)': 'LIB', 'W(R)/R': 'R', 'R/TRP': 'R', 'CRV/LIB': 'CRV', 'W(DNL)': 'DNL', 'D/WF*': 'D', 'R/CON*': 'R', 'PRO/PG': 'PRO', 'R/CON*/IP*': 'R', 
+			'D/PRO/WF*': 'D', 'W(LBU)': 'LBU', 'W(PRO)': 'PRO', 'W(CON)': 'CON', 'W(R)/W': 'R', 'N(DEM)': 'DEM', 'DEM/IP/PRO/WF': 'DEM'}
 			col_dict = {'D': 'DISTRICT', 'FECID#': 'FECID','(I)': 'INCUMBENTINDICATOR', 'GERUNOFFELECTIONVOTES(LA)': 'GERUNOFFELECTIONVOTES'}
 
 			#Remove extraneous records
@@ -465,10 +473,10 @@ class FECLoad(object):
 		elif year == 2016:
 			#Create label cleanup dictionaries
 			party_dict = {'REP/AIP' : 'REP','W(D)': 'D', 'W(R)': 'R','W(GR)': 'GR', 'W(IP)': 'IP', 'W(GRE)/GRE': 'GRE', 'W(LIB)': 'LIB', 'W(GRE)': 'GRE', 'W(R)/R': 'R', 'W(NOP)': 'NOP', 'R/W': 'R', 
-						'W(DCG)': 'DCG', 'W(IND)': 'IND',  'W(D)/D': 'D', 'W(DNL)': 'DNL', 'D/IP': 'D', 'R/IP': 'R', 'IP/R': 'IP', 'D/PRO/WF/IP': 'D', 'R/CON': 'R', 'W(D)/W': 'D', 'W(NPP)': 'NPP', 
-						'W(PPD)': 'PPD', 'D/R': 'D', 'W(PRO)': 'PRO', 'W(WG)': 'WG', 'W(CON)': 'CON'}
-			col_dict = {'LASTNAME,FIRST' : 'CANDIDATENAME', 'GENERALRESULTS': 'GENERALVOTES', 'PRIMARYRESULTS' : 'PRIMARYVOTES', 'D' : 'DISTRICT', 'FECID#'  : 'FECID',
-						'(I)' : 'INCUMBENTINDICATOR', 'GERUNOFFELECTIONVOTES(LA)': 'GERUNOFFELECTIONVOTES'}
+			'W(DCG)': 'DCG', 'W(IND)': 'IND',  'W(D)/D': 'D', 'W(DNL)': 'DNL', 'D/IP': 'D', 'R/IP': 'R', 'IP/R': 'IP', 'D/PRO/WF/IP': 'D', 'R/CON': 'R', 'W(D)/W': 'D', 'W(NPP)': 'NPP', 'W(PPD)': 'PPD', 
+			'D/R': 'D', 'W(PRO)': 'PRO', 'W(WG)': 'WG', 'W(CON)': 'CON', 'PG/PRO': 'PG', 'R/TRP': 'R'}
+			col_dict = {'LASTNAME,FIRST' : 'CANDIDATENAME', 'GENERALRESULTS': 'GENERALVOTES', 'PRIMARYRESULTS' : 'PRIMARYVOTES', 'D' : 'DISTRICT', 'FECID#'  : 'FECID', '(I)' : 'INCUMBENTINDICATOR', 
+			'GERUNOFFELECTIONVOTES(LA)': 'GERUNOFFELECTIONVOTES'}
 
 			#Remove extraneous records
 			df_pg = self.pres_general
@@ -518,8 +526,156 @@ class FECLoad(object):
 
 		return df
 
+class ElectionAnalytics(object):
+	"""docstring for ElectionAnalytics"""
+	def __init__(self, df, parties= 3):
+		self.df = df
+		self.party_dict = {'Democratic Party' : 'Democratic', 'Republican Party' : 'Republican', 'Democratic-Farmer-Labor' : 'Democratic', 'Democratic-Nonpartisan League' : 'Democratic',
+		'Democratic-Farmer Labor': 'Democratic', 'REP': 'Republican', 'DEM': 'Democratic', 'DFL': 'Democratic'}
+		self.parties = parties
 
-class ElectionResults(object):
-	"""docstring for ElectionResults"""
-	def __init__(self, type='President'):
-		pass
+	def pretty(self):
+		df = self.df
+		df.loc[:,'PARTY'].replace(self.party_dict, inplace=True)
+		df.loc[(df['DISTRICT'] != 'President') & (df['DISTRICT'] != 'Senator'),'DISTRICT'] = 'House'
+
+		if self.parties == 3:
+			df.loc[(df['PARTY'] != 'Republican') & (df['PARTY'] != 'Democratic'),'PARTY'] = 'Other'
+
+		cancount = df.groupby(['YEAR','STATE','DISTRICT','PARTY']).count()
+		cancount.rename(columns = {'GENERALVOTES' : 'NUMGENCAN', 'PRIMARYVOTES': 'NUMPRIMCAN', 'RUNOFFVOTES': 'NUMRUNCAN', 'GERUNOFFELECTIONVOTES': 'NUMGERUNCAN'}, inplace=True)
+		cansum = df.groupby(['YEAR','STATE','DISTRICT','PARTY']).sum()
+
+		df = cansum.merge(cancount[['NUMGENCAN', 'NUMPRIMCAN', 'NUMRUNCAN', 'NUMGERUNCAN']], how='left', left_index=True, right_index= True).reset_index()
+
+		return df
+
+class GlobalVariables(object):
+	def __init__(self):
+		self.arrays = [list(range(2000,2042,2)), ['Democratic','Republican','Other'], ['President','Senator','House']]
+		self.ndx = pd.MultiIndex.from_product(self.arrays, names=['YEAR','PARTY','DISTRICT'])
+		self.multi = pd.DataFrame(np.random.randn(189),index=self.ndx).reset_index() #TODO, this makes aribtrary dataframe
+		self.future = {'MIDTERM' : pd.Series([0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], index=list(range(2000,2042,2))), 
+		'DEMPRES' : pd.Series([1,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0], index=list(range(2000,2042,2)))}
+		self.future_df = pd.DataFrame(self.future)
+		self.df = self.future_df.merge(self.multi, how='left', left_index=True, right_on = 'YEAR')
+
+class AllData(object):
+	def __init__(self,df,office='President',election_type='general'):
+		self.office = office
+		self.election_type = election_type
+		init_df = df[df['DISTRICT']==self.office]
+		if self.election_type == 'general':
+			self.df = init_df[['YEAR', 'STATE', 'DIVISION', 'DISTRICT','PARTY','ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'MIDTERM', 'DEMPRES', 'GENERALVOTES', 
+			'NUMGENCAN']].dropna(subset=['MIDTERM']).rename(columns={'GENERALVOTES': 'LOG10(VOTES)', 'NUMGENCAN': 'NUMCAN'})
+
+		if self.election_type == 'primary':
+			self.df = init_df[['YEAR', 'STATE', 'DIVISION', 'DISTRICT','PARTY','ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'MIDTERM', 'DEMPRES', 'PRIMARYVOTES', 
+			'NUMPRIMCAN']].dropna(subset=['MIDTERM']).rename(columns={'PRIMARYVOTES': 'LOG10(VOTES)', 'NUMPRIMCAN': 'NUMCAN'})
+
+		if self.election_type == 'runoff':
+			self.df = init_df[['YEAR', 'STATE', 'DIVISION', 'DISTRICT','PARTY','ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'MIDTERM', 'DEMPRES', 'RUNOFFVOTES', 
+			'NUMRUNCAN']].dropna(subset=['MIDTERM']).rename(columns={'RUNOFFVOTES': 'LOG10(VOTES)', 'NUMRUNCAN': 'NUMCAN'})
+
+		if self.election_type == 'General':
+			self.df = init_df[['YEAR', 'STATE', 'DIVISION', 'DISTRICT','PARTY','ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'MIDTERM', 'DEMPRES', 'GERUNOFFELECTIONVOTES',
+			'NUMGERUNCAN']].dropna(subset=['MIDTERM']).rename(columns={'GERUNOFFELECTIONVOTES': 'LOG10(VOTES)', 'NUMGERUNCAN': 'NUMCAN'})
+
+		if self.office == 'President':
+			self.train = self.df[self.df['LOG10(VOTES)'].notnull()]
+			self.logtrain = self.train[['LOG10(VOTES)', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE']]
+			self.logtrain = self.logtrain.apply(np.log10)
+			self.train = self.train[['YEAR', 'STATE', 'DIVISION', 'DISTRICT', 'PARTY','DEMPRES', 'NUMCAN']].merge(self.logtrain, how='left', left_index=True, right_index=True)
+			self.test = self.df[(self.df['YEAR'] == 2020) | (self.df['YEAR'] == 2024) | (self.df['YEAR'] == 2028) | (self.df['YEAR'] == 2032) | (self.df['YEAR'] == 2036) | (self.df['YEAR'] == 2040)]
+			self.logtest = self.test[['LOG10(VOTES)', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE']]
+			self.logtest = self.logtest.apply(np.log10)
+			self.test = self.test[['YEAR', 'STATE', 'DIVISION', 'DISTRICT', 'PARTY', 'DEMPRES', 'NUMCAN']].merge(self.logtest, how='left', left_index=True, right_index=True)
+
+		else:
+			self.train = self.df[self.df['YEAR'] < 2018]
+			self.test = self.df[self.df['YEAR'] == 2018]
+			self.train = self.train[['YEAR', 'STATE', 'DIVISION', 'DISTRICT', 'PARTY', 'DEMPRES', 'NUMCAN']].merge(self.logtrain, how='left', left_index=True, right_index=True)
+			self.logtrain = self.logtrain.apply(np.log10)
+			self.test = self.df[(self.df['YEAR'] == 2020) | (self.df['YEAR'] == 2024) | (self.df['YEAR'] == 2028) | (self.df['YEAR'] == 2032) | (self.df['YEAR'] == 2036) | (self.df['YEAR'] == 2040)]
+			self.logtest = self.test[['LOG10(VOTES)', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE']]
+			self.logtest = self.logtest.apply(np.log10)
+			self.test = self.test[['YEAR', 'STATE', 'DIVISION', 'DISTRICT', 'PARTY', 'DEMPRES', 'NUMCAN']].merge(self.logtest, how='left', left_index=True, right_index=True)
+
+	def response(self):
+		df = self.train[['PARTY','LOG10(VOTES)']]
+		df.columns = df.columns.str.title()
+		return df
+
+	def cont_var(self):
+		df = self.train[['PARTY', 'LOG10(VOTES)', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE']]
+		df.columns = df.columns.str.title()
+		df = df.melt(id_vars=['Log10(Votes)', 'Party']).reset_index()
+		df.rename(columns={'variable': 'Race', 'value': 'LOG10(Population)'}, inplace=True)
+		return df
+
+	def bi_var(self):
+		if self.office=='President':
+			df = self.train[['PARTY','LOG10(VOTES)', 'DEMPRES']]
+		else:
+			df = self.train[['PARTY','LOG10(VOTES)', 'MIDTERM', 'DEMPRES']]
+		df.columns = df.columns.str.title()
+		return df
+
+	def cat_var(self):
+		df = self.train[['PARTY', 'LOG10(VOTES)', 'DIVISION']]
+		df.columns = df.columns.str.title()
+		return df
+
+	def regression(self, output):
+		train = self.train
+		test = self.test
+		train = pd.get_dummies(train, columns=['DIVISION'], drop_first=True)
+		test = pd.get_dummies(test, columns=['DIVISION'], drop_first=True)
+		dem = train[train['PARTY']=='Democratic']
+		rep = train[train['PARTY']=='Republican']
+		oth = train[train['PARTY']=='Other']
+		demt = test[test['PARTY']=='Democratic']
+		rept = test[test['PARTY']=='Republican']
+		otht = test[test['PARTY']=='Other']
+		demX = dem[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+			'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+		repX = rep[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+			'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+		othX = oth[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+			'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+		demy = dem['LOG10(VOTES)']
+		repy = rep['LOG10(VOTES)']
+		othy = oth['LOG10(VOTES)']
+		demreg = LassoCV(cv=5).fit(demX, demy)
+		repreg = LassoCV(cv=5).fit(repX, repy)
+		othreg = LassoCV(cv=5).fit(othX, othy)
+		dem['PRELog10(Votes)'] = demreg.predict(demX)
+		rep['PRELog10(Votes)'] = repreg.predict(repX)
+		oth['PRELog10(Votes)'] = othreg.predict(othX)
+
+		if output == 'fit':
+			stats = {'RSquare' : pd.Series([demreg.score(demX, demy), repreg.score(repX, repy), othreg.score(othX, othy)], index=['Democrat', 'Republican', 'Other']),
+			'RMSE' : pd.Series([math.sqrt(mean_squared_error(dem['LOG10(VOTES)'],dem['PRELog10(Votes)'])), math.sqrt(mean_squared_error(rep['LOG10(VOTES)'],rep['PRELog10(Votes)'])), 
+			math.sqrt(mean_squared_error(oth['LOG10(VOTES)'],oth['PRELog10(Votes)']))],index=['Democrat', 'Republican', 'Other'])}
+			df = pd.DataFrame(stats)
+
+		if output == 'dataframe':
+			demX = demt[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			repX = rept[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			othX = otht[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			demt['PRELog10(Votes)'] = demreg.predict(demX)
+			rept['PRELog10(Votes)'] = repreg.predict(repX)
+			otht['PRELog10(Votes)'] = othreg.predict(othX)
+			df = dem.append(rep, sort=True)
+			df = df.append(oth, sort=True)
+			df['RESIDUAL'] = df['LOG10(VOTES)'] - df['PRELog10(Votes)']
+			df = df.append(demt, sort=True)
+			df = df.append(rept, sort=True)
+			df = df.append(otht, sort=True)
+			df['PREDICTED VOTES'] = df['PRELog10(Votes)'].apply(lambda x: math.pow(10,x))
+			df['ACTUAL VOTES'] = df['LOG10(VOTES)'].apply(lambda x: math.pow(10,x))					
+			df = df[['YEAR','STATE','PARTY','LOG10(VOTES)','PRELog10(Votes)','RESIDUAL','ACTUAL VOTES','PREDICTED VOTES']]
+		return df.pivot_table(index=['STATE','YEAR'],columns='PARTY').stack(0)
