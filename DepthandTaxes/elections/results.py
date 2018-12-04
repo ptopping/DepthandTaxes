@@ -527,7 +527,10 @@ class FECLoad(object):
 		return df
 
 class ElectionAnalytics(object):
-	"""docstring for ElectionAnalytics"""
+	"""Perform analytics functions on full cleaned election dataset 
+	df = dataframe
+	parties = int, number of parties to perform function for.  With 3 parties will take the form label, label, other
+	"""
 	def __init__(self, df, parties= 3):
 		self.df = df
 		self.party_dict = {'Democratic Party' : 'Democratic', 'Republican Party' : 'Republican', 'Democratic-Farmer-Labor' : 'Democratic', 'Democratic-Nonpartisan League' : 'Democratic',
@@ -535,22 +538,29 @@ class ElectionAnalytics(object):
 		self.parties = parties
 
 	def pretty(self):
+		'''Returns pretty dataframe with analytic functions appended'''
 		df = self.df
+		
+		#Remap values to ensure consistency
 		df.loc[:,'PARTY'].replace(self.party_dict, inplace=True)
 		df.loc[(df['DISTRICT'] != 'President') & (df['DISTRICT'] != 'Senator'),'DISTRICT'] = 'House'
 
+		#Takes the form of 'Label', Label', 'Other  May add further labels
 		if self.parties == 3:
 			df.loc[(df['PARTY'] != 'Republican') & (df['PARTY'] != 'Democratic'),'PARTY'] = 'Other'
 
+		#Perform analytic functions
 		cancount = df.groupby(['YEAR','STATE','DISTRICT','PARTY']).count()
 		cancount.rename(columns = {'GENERALVOTES' : 'NUMGENCAN', 'PRIMARYVOTES': 'NUMPRIMCAN', 'RUNOFFVOTES': 'NUMRUNCAN', 'GERUNOFFELECTIONVOTES': 'NUMGERUNCAN'}, inplace=True)
 		cansum = df.groupby(['YEAR','STATE','DISTRICT','PARTY']).sum()
 
+		#Combine into one dataframe
 		df = cansum.merge(cancount[['NUMGENCAN', 'NUMPRIMCAN', 'NUMRUNCAN', 'NUMGERUNCAN']], how='left', left_index=True, right_index= True).reset_index()
 
 		return df
 
 class GlobalVariables(object):
+	'''Instantiates a dataframe with dummy variables for Congressional Elections'''
 	def __init__(self):
 		self.arrays = [list(range(2000,2042,2)), ['Democratic','Republican','Other'], ['President','Senator','House']]
 		self.ndx = pd.MultiIndex.from_product(self.arrays, names=['YEAR','PARTY','DISTRICT'])
@@ -561,6 +571,11 @@ class GlobalVariables(object):
 		self.df = self.future_df.merge(self.multi, how='left', left_index=True, right_on = 'YEAR')
 
 class AllData(object):
+	"""Container for methods on full dataset
+	office = str, takes the value of President, Senator, or House
+	election_type = str, takes the value of general, primary, runoff or gerunnoff
+	Creates train and test sets, (modeling will include k-fold cross validation, so no validation set)
+	"""
 	def __init__(self,df,office='President',election_type='general'):
 		self.office = office
 		self.election_type = election_type
@@ -577,7 +592,7 @@ class AllData(object):
 			self.df = init_df[['YEAR', 'STATE', 'DIVISION', 'DISTRICT','PARTY','ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'MIDTERM', 'DEMPRES', 'RUNOFFVOTES', 
 			'NUMRUNCAN']].dropna(subset=['MIDTERM']).rename(columns={'RUNOFFVOTES': 'LOG10(VOTES)', 'NUMRUNCAN': 'NUMCAN'})
 
-		if self.election_type == 'General':
+		if self.election_type == 'gerunoff':
 			self.df = init_df[['YEAR', 'STATE', 'DIVISION', 'DISTRICT','PARTY','ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'MIDTERM', 'DEMPRES', 'GERUNOFFELECTIONVOTES',
 			'NUMGERUNCAN']].dropna(subset=['MIDTERM']).rename(columns={'GERUNOFFELECTIONVOTES': 'LOG10(VOTES)', 'NUMGERUNCAN': 'NUMCAN'})
 
@@ -602,11 +617,13 @@ class AllData(object):
 			self.test = self.test[['YEAR', 'STATE', 'DIVISION', 'DISTRICT', 'PARTY', 'DEMPRES', 'NUMCAN']].merge(self.logtest, how='left', left_index=True, right_index=True)
 
 	def response(self):
+		'''Trimeed dataframe for the response variables'''
 		df = self.train[['PARTY','LOG10(VOTES)']]
 		df.columns = df.columns.str.title()
 		return df
 
 	def cont_var(self):
+		'''trimmed dataframe for continuous variables'''
 		df = self.train[['PARTY', 'LOG10(VOTES)', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE']]
 		df.columns = df.columns.str.title()
 		df = df.melt(id_vars=['Log10(Votes)', 'Party']).reset_index()
@@ -614,38 +631,55 @@ class AllData(object):
 		return df
 
 	def bi_var(self):
-		if self.office=='President':
-			df = self.train[['PARTY','LOG10(VOTES)', 'DEMPRES']]
-		else:
-			df = self.train[['PARTY','LOG10(VOTES)', 'MIDTERM', 'DEMPRES']]
+		'''Trimmed dataframe for binary variables'''
+		df = self.train[['PARTY','LOG10(VOTES)', 'MIDTERM', 'DEMPRES']]
 		df.columns = df.columns.str.title()
 		return df
 
 	def cat_var(self):
+		'''Trimmed dataframe for categorical variables'''
 		df = self.train[['PARTY', 'LOG10(VOTES)', 'DIVISION']]
 		df.columns = df.columns.str.title()
 		return df
 
 	def regression(self, output):
+		'''Perform multiple regression on dataset and output either, regression fit statistics or dataframe with predictions'''
 		train = self.train
 		test = self.test
+		
+		#Convert categorical columns to dummy columns
 		train = pd.get_dummies(train, columns=['DIVISION'], drop_first=True)
 		test = pd.get_dummies(test, columns=['DIVISION'], drop_first=True)
+		
+		#Break down datasets by party
 		dem = train[train['PARTY']=='Democratic']
 		rep = train[train['PARTY']=='Republican']
 		oth = train[train['PARTY']=='Other']
 		demt = test[test['PARTY']=='Democratic']
 		rept = test[test['PARTY']=='Republican']
 		otht = test[test['PARTY']=='Other']
-		demX = dem[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
-			'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
-		repX = rep[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
-			'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
-		othX = oth[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
-			'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+		
+		#Define x and y variables for training set
+		if self.office == 'President':
+			demX = dem[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			repX = rep[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			othX = oth[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+		
+		else:
+			demX = dem[['DEMPRES', 'NUMCAN', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			repX = rep[['DEMPRES', 'NUMCAN', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			othX = oth[['DEMPRES', 'NUMCAN', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
 		demy = dem['LOG10(VOTES)']
 		repy = rep['LOG10(VOTES)']
 		othy = oth['LOG10(VOTES)']
+		
+		#Fit regression and predict values
 		demreg = LassoCV(cv=5).fit(demX, demy)
 		repreg = LassoCV(cv=5).fit(repX, repy)
 		othreg = LassoCV(cv=5).fit(othX, othy)
@@ -653,6 +687,7 @@ class AllData(object):
 		rep['PRELog10(Votes)'] = repreg.predict(repX)
 		oth['PRELog10(Votes)'] = othreg.predict(othX)
 
+		#Determine what to output
 		if output == 'fit':
 			stats = {'RSquare' : pd.Series([demreg.score(demX, demy), repreg.score(repX, repy), othreg.score(othX, othy)], index=['Democrat', 'Republican', 'Other']),
 			'RMSE' : pd.Series([math.sqrt(mean_squared_error(dem['LOG10(VOTES)'],dem['PRELog10(Votes)'])), math.sqrt(mean_squared_error(rep['LOG10(VOTES)'],rep['PRELog10(Votes)'])), 
@@ -660,22 +695,57 @@ class AllData(object):
 			df = pd.DataFrame(stats)
 
 		if output == 'dataframe':
-			demX = demt[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
-				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
-			repX = rept[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
-				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
-			othX = otht[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
-				'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			if self.office == 'President':
+				demX = demt[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+					'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+				repX = rept[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+					'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+				othX = otht[['ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+					'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			
+			else:
+				demX = demt[['DEMPRES', 'NUMCAN', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+					'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+				repX = rept[['DEMPRES', 'NUMCAN', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+					'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+				othX = otht[['DEMPRES', 'NUMCAN', 'ASIAN', 'BLACK', 'HAWAIIAN', 'HISPANIC', 'MULTI', 'NATIVE', 'WHITE', 'DIVISION_East South Central', 'DIVISION_Middle Atlantic', 'DIVISION_Mountain', 
+					'DIVISION_New England', 'DIVISION_Pacific', 'DIVISION_South Atlantic', 'DIVISION_West North Central', 'DIVISION_West South Central']]
+			
+			#Predict test set
 			demt['PRELog10(Votes)'] = demreg.predict(demX)
 			rept['PRELog10(Votes)'] = repreg.predict(repX)
 			otht['PRELog10(Votes)'] = othreg.predict(othX)
+			
+			#Merge train and test sets
 			df = dem.append(rep, sort=True)
 			df = df.append(oth, sort=True)
 			df['RESIDUAL'] = df['LOG10(VOTES)'] - df['PRELog10(Votes)']
 			df = df.append(demt, sort=True)
 			df = df.append(rept, sort=True)
 			df = df.append(otht, sort=True)
+			
+			#Convert transformed values
 			df['PREDICTED VOTES'] = df['PRELog10(Votes)'].apply(lambda x: math.pow(10,x))
-			df['ACTUAL VOTES'] = df['LOG10(VOTES)'].apply(lambda x: math.pow(10,x))					
+			df['ACTUAL VOTES'] = df['LOG10(VOTES)'].apply(lambda x: math.pow(10,x))
+			
 			df = df[['YEAR','STATE','PARTY','LOG10(VOTES)','PRELog10(Votes)','RESIDUAL','ACTUAL VOTES','PREDICTED VOTES']]
-		return df.pivot_table(index=['STATE','YEAR'],columns='PARTY').stack(0)
+		return df
+	
+	def residuals(self):
+		'''Residuals of regression analysis'''
+		df = regression(self,output='dataframe')
+		
+	def outcome(self):
+		'''Create dataframe for final mapping of predicted outcome'''
+		df = regression(self,output='dataframe')
+		
+		#Reshape the dataframe and create sum column
+		df = df.pivot_table(index=['STATE','YEAR'],columns='PARTY').stack(0)
+		df['TOTAL VOTE'] = df.sum(axis=1)
+		
+		#Calculate partisan lean
+		if self.office == 'President':
+			df['DEM%'] = df['Democratic'] / DF['TOTAL VOTE']
+			df['REP%'] = df['Republican'] / DF['TOTAL VOTE']
+			df['DEM_LEAN'] = df['DEM%'] - df['REP%']
+		
