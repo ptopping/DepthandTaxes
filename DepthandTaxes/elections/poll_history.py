@@ -5,35 +5,55 @@ from scipy import stats
 from math import sqrt
 from statsmodels.tsa.stattools import acf
 from matplotlib import pyplot as plt
-sns.set_style('white')
+sns.set_style('whitegrid')
 
-elechis_df = pd.read_excel('C:\\Users\\jen\\Documents\\Patrick\\exit polls.xlsx',sheet_name='Sheet1')
-elechis_df
-
+elechis_df = pd.read_excel('C:\\Users\\ptopp\\Documents\\DATFiles\\exit polls.xlsx',sheet_name='Sheet1')
 roper = elechis_df[elechis_df['Source'] == 'Roper']
-roper
-
-sns.despine(left=True)
-roperplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Race',data=roper,col='Party')
-roperplot.savefig('elec10141801.png')
-
 gallup = elechis_df[elechis_df['Source'] == 'Gallup']
-gallup
+
+roperplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Race',data=roper,col='Party')
+roperplot.despine(left=True)
+roperplot.savefig('ropertimeseries.png')
 
 gallupplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Race',data=gallup,col='Party')
-gallupplot.savefig('elec10141802.png')
+gallupplot.despine(left=True)
+gallupplot.savefig('galluptimeseries.png')
 
-roper_trunc = roper[(roper['Year'] >= 1980) & (roper['Race'] == 'White')]
-gallup_trunc = gallup[(gallup['Year'] <= 1996)]
-merged_sample = roper_trunc.append(gallup_trunc)
-merged_sample = merged_sample.append(r9.reset_index(drop=True))
-mergeplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Source',data=merged_sample,col='Party')
-mergeplot.savefig('elec10261803.png')
-merged_sample
+# roper_trunc = roper[(roper['Year'] >= 1980) & (roper['Race'] == 'White')]
+# gallup_trunc = gallup[(gallup['Year'] <= 1996)]
+# merged_sample = roper_trunc.append(gallup_trunc)
+# merged_sample = merged_sample.append(r9.reset_index(drop=True))
+# mergeplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Source',data=merged_sample,col='Party')
+# mergeplot.savefig('elec10261803.png')
+# merged_sample
 
 roper_race_samp = roper[(roper['Race'] == 'White') | (roper['Race'] == 'African-American') | (roper['Race'] == 'Hispanic')]
 raceplot = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_race_samp)
-raceplot.savefig('elec10141804.png')
+raceplot.despine(left=True)
+raceplot.savefig('roper3racetimeseries.png')
+
+whiterep = roper[(roper['Race'] == 'White') & (roper['Party'] == 'Republican')]
+blackrep = roper[(roper['Race'] == 'African-American') & (roper['Party'] == 'Republican')]
+hispanicrep = roper[(roper['Race'] == 'Hispanic') & (roper['Party'] == 'Republican')]
+whitedem = roper[(roper['Race'] == 'White') & (roper['Party'] == 'Democratic')]
+blackdem = roper[(roper['Race'] == 'African-American') & (roper['Party'] == 'Democratic')]
+hispanicdem =roper[(roper['Race'] == 'Hispanic') & (roper['Party'] == 'Democratic')]
+a_whiterep = {'acf': acf(whiterep['Vote Pct.'],unbiased=True), 'Race': 'White', 'Party': 'Republican'}
+a_blackrep = {'acf':acf(blackrep['Vote Pct.'],unbiased=True), 'Race': 'African-American', 'Party': 'Republican'}
+a_hispanicrep = {'acf': acf(hispanicrep['Vote Pct.'],unbiased=True), 'Race': 'Hispanic', 'Party': 'Republican'}
+a_whitedem = {'acf': acf(whitedem['Vote Pct.'],unbiased=True), 'Race': 'White', 'Party': 'Democratic'}
+a_blackdem = {'acf': acf(blackdem['Vote Pct.'],unbiased=True), 'Race': 'African-American', 'Party': 'Democratic'}
+a_hispanicdem = {'acf': acf(hispanicdem['Vote Pct.'],unbiased=True), 'Race': 'Hispanic', 'Party': 'Democratic'}
+results = [a_whiterep, a_blackrep, a_hispanicrep, a_whitedem, a_blackdem, a_hispanicdem]
+results = [pd.DataFrame(d) for d in results]
+results_df = pd.concat(results, sort=True).reset_index()
+results_df
+
+acfplot = sns.catplot(x='index', y='acf', col='Race', row='Party', kind='bar', ci=None)
+acfplot = sns.catplot(x='index', y='acf', data = results_df, col='Race', row='Party', kind='bar', ci=None, hue='Race')
+(acfplot.despine(left=True).set(xlim=(1, 5)))
+
+
 
 raceplot2 = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_trunc)
 raceplot2.savefig('elec10141805.png')

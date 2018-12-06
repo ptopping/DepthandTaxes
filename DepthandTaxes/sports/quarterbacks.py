@@ -16,19 +16,6 @@ nfl_pal = {'ARI':'#97233F','ATL':'#A71930','BAL':'#241773','BUF':'#00338D','CAR'
 'NOR':'#D3BC8D','NWE':'#002244','NYG':'#0B2265','NYJ':'#003F2D','OAK':'#000000','PHI':'#004C54','PIT':'#FFB612',
 'SEA':'#002244','SFO':'#AA0000','TAM':'#D50A0A','TEN':'#002A5C','WAS':'#773141'}
 
-week1 = make_df(main(NFLSpread,'Week 1!A1:AE'))
-week2 = make_df(main(NFLSpread,'Week 2!A1:AE'))
-week3 = make_df(main(NFLSpread,'Week 3!A1:AE'))
-week4 = make_df(main(NFLSpread,'Week 4!A1:AE'))
-week5 = make_df(main(NFLSpread,'Week 5!A1:AE'))
-week6 = make_df(main(NFLSpread,'Week 6!A1:AE'))
-week7 = make_df(main(NFLSpread,'Week 7!A1:AE'))
-week8 = make_df(main(NFLSpread,'Week 8!A1:AE'))
-week9 = make_df(main(NFLSpread,'Week 9!A1:AE'))
-week10 = make_df(main(NFLSpread,'Week 10!A1:AE'))
-week11 = make_df(main(NFLSpread,'Week 11!A1:AE'))
-week12 = make_df(main(NFLSpread,'Week 12!A1:AE'))
-
 def main(SPREADSHEET_ID,RANGE_NAME):
     """Calls Google Sheets API.
     Returns value from QB Stats spreadsheet.
@@ -46,12 +33,14 @@ def main(SPREADSHEET_ID,RANGE_NAME):
     values = result.get('values', [])
     return values
 
-Class QBStats(object):
+class QBStats(object):
 	def __init__(self,SPREADSHEET_ID, RANGE_NAME):
 		self.SPREADSHEET_ID = SPREADSHEET_ID
 		self.RANGE_NAME = RANGE_NAME
-    
-	def zscore(dataframe):
+		self.data = main(self.SPREADSHEET_ID, self.RANGE_NAME)
+		self.df = pd.DataFrame(self.data,columns=self.data[0])
+
+	def zscore(self):
 		'''Creates a DataFrame of Passer Rating Components and performs a z transform
 		'''
 		df = dataframe
@@ -86,6 +75,7 @@ Class QBStats(object):
 		df.loc[(df['Above'] >= 1) & (df['Below'] >= 1), 'Cat'] = 'Mixed'
 		df.loc[(df['Above'] == 0) & (df['Below'] <= 3) & (df['Below'] >= 1), 'Cat'] = 'Bad'
 		df = df[['Name','Tm','Cat','Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]
+		df[['Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']] = df[['Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']].apply(pd.to_numeric)
 		df.reset_index(drop=True,inplace=True)
 		return df
 
@@ -122,27 +112,70 @@ def spider(df):
 def uniplot(df):
     sns.set_style('darkgrid')
     g = sns.FacetGrid(data=df, sharex=False, sharey=False)
-    g.map(plt.hist, 'Rate')
+    g = g.map(plt.hist, 'Rate')
     plt.tight_layout()
-    g.savefifg('{}.png'.format()) #TODO
+#     g.savefifg('{}.png'.format()) #TODO
     
     g2 = sns.FacetGrid(data=df, sharex=False, sharey=False)
-    g2.map(plt.hist, 'Wins')
+    g2 = g2.map(plt.hist, 'Wins')
     plt.tight_layout()
-    g2.savefig('{}.png'.format()) #TODO
+#     g2.savefig('{}.png'.format()) #TODO
     
     df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
-    g3 = sns.FacetGrid(data=df1, cols=variable, col_wrap=2, sharex=False, sharey=False)
-    g3 = g.map(plt.hist, 'value')
+    g3 = sns.FacetGrid(data=df1, col='variable', col_wrap=2, sharex=False, sharey=False)
+    g3 = g3.map(plt.hist, 'value')
     plt.tight_layout()
-    g3.savefig('{}.png'.format()) #TODO
+#     g3.savefig('{}.png'.format()) #TODO
     
 def biplot(df):
     sns.set_style('darkgrid')
     df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
     df1.reset_index(inplace=True)
     g = sns.relplot(x='value', y='Wins', data=df1, col='variable', col_wrap=2, kind='scatter')
-    g.savefig('{}.png'.format())
+#     g.savefig('{}.png'.format())
     
-    g1 = sns.pairplot(df[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
-    g1.savefig('{}.png'.format())
+    g1 = sns.PairGrid(df[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
+    g1.map(plt.scatter)
+#     g1.savefig('{}.png'.format())
+
+week1 = QBStats(NFLSpread,'Week 1!A1:AE')
+week2 = QBStats(NFLSpread,'Week 2!A1:AE')
+week3 = QBStats(NFLSpread,'Week 3!A1:AE')
+week4 = QBStats(NFLSpread,'Week 4!A1:AE')
+week5 = QBStats(NFLSpread,'Week 5!A1:AE')
+week6 = QBStats(NFLSpread,'Week 6!A1:AE')
+week7 = QBStats(NFLSpread,'Week 7!A1:AE')
+week8 = QBStats(NFLSpread,'Week 8!A1:AE')
+week9 = QBStats(NFLSpread,'Week 9!A1:AE')
+week10 = QBStats(NFLSpread,'Week 10!A1:AE')
+week11 = QBStats(NFLSpread,'Week 11!A1:AE')
+week12 = QBStats(NFLSpread,'Week 12!A1:AE')
+week13 = QBStats(NFLSpread,'Week 13!A1:AE')
+
+data10 = []
+for y in range(2008,2018):
+	data10.append(QBStats(NFLSpread,'{}!A1:AE'.format(y)).zscore())
+data10 = pd.concat(data10,sort=True)
+
+y, X = data10['Wins'], data10[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']]
+reg = LassoCV(cv=5).fit(X, y)
+lasso = LassoCV(cv=5)
+reg.score(X,y)
+
+data10['PredictedWins'] = reg.predict(X)
+sqrt(mean_squared_error(data10['Wins'],data10['PredictedWins']))
+
+
+
+salary = pd.read_html('https://www.spotrac.com/nfl/rankings/cap-hit/quarterback/')
+salary = salary[0]
+sa_name = salary['Player'].str.split(expand=True)
+sa_name['Name'] = sa_name.iloc[:,0] + ' ' + sa_name.iloc[:,1]
+salary = salary.join(sa_name)
+week12 = QBStats(NFLSpread,'Week 12!A1:AE').zscore()
+week12['PredictedWins'] = reg.predict(week12[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
+data = week12.merge(salary[['cap hit','Name']],how='left', left_on='Name',right_on='Name')
+data['cap hit'].replace(regex=r'\D+',value='',inplace=True)
+data['cap hit'] = data['cap hit'].apply(pd.to_numeric)
+data['efficiency'] = data['cap hit']/data['PredictedWins']
+sns.relplot(data=data, kind='scatter', x='cap hit', y='PredictedWins', hue='Tm', palette=nfl_pal)

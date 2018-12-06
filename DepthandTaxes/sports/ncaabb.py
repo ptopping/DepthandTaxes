@@ -1,9 +1,6 @@
 import pandas as pd
 import seaborn as sns
 
-x = pd.read_html('http://www.sports-reference.com/cbb/play-index/tourney.cgi?request=1&match=single&year_min=1983&year_max=1983&seed_cmp=eq&opp_seed_cmp=eq&game_result=W&pts_diff_cmp=eq&order_by_single=date_game&order_by_combined=g')
-x
-
 def frameget(year):
     url = 'http://www.sports-reference.com/cbb/play-index/tourney.cgi?request=1&match=single&year_min={0}&year_max={0}&seed_cmp=eq&opp_seed_cmp=eq&game_result=W&pts_diff_cmp=eq&order_by_single=date_game&order_by_combined=g'.format(year)
     init = pd.read_html(url)
@@ -25,14 +22,23 @@ results_df.drop(results_df[(results_df['Round']=='Opening Round') & ((results_df
 results_df.drop(results_df[(results_df['Round']=='First Round') & ((results_df['Year']>=2011) & (results_df['Year']<=2015))].index, axis= 0, inplace= True)
 results_df.drop(results_df[(results_df['Round']=='First Four') & (results_df['Year']>=2016)].index, axis= 0, inplace= True)
 
+g = sns.catplot(x='WinnerSeed', data=results_df, order = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16'], kind='count')
+g.set_ylabels('Total Games Won')
+g.set_xlabels('Seed')
+g.despine(left=True)
+g.savefig('ncaabb_totalwins.png')
+
 secondround = results_df[((results_df['Round']=='Second Round') & ((results_df['Year'] <= 2010) | (results_df['Year'] > 2015))) | 
 ((results_df['Round']=='Third Round') & ((results_df['Year'] >= 2011) & (results_df['Year'] <= 2015)))]
 
 games = secondround[['Year','WinnerSeed','LoserSeed']].melt(id_vars='Year')
-games.loc[games['variable'] == 'WinnerSeed':,'WIN2'] = 1
+games.loc[games['variable'] == 'WinnerSeed','WIN2'] = 1
 games['WIN2'].fillna(0,inplace=True)
 
-g = sns.catplot(x='WinnerSeed',y='WIN2', data=games, hue='LoserSeed', order = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16'], kind='bar')
+g = sns.catplot(x='value',y='WIN2', data=games, order = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16'], kind='bar')
 g.set_ylabels('2nd Round Win Percentage')
+g.set_xlabels('Seed')
+g.despine(left=True)
+g.savefig('ncaabb_rd2winpct.png')
 
 
