@@ -733,11 +733,13 @@ class AllData(object):
 	
 	def residuals(self):
 		'''Residuals of regression analysis'''
-		df = regression(self,output='dataframe')
+		df = self.regression(output='dataframe')
+		df.columns = df.columns.str.title()
+		return df
 		
 	def outcome(self):
 		'''Create dataframe for final mapping of predicted outcome'''
-		df = regression(self,output='dataframe')
+		df = self.regression(output='dataframe')
 		
 		#Reshape the dataframe and create sum column
 		df = df.pivot_table(index=['STATE','YEAR'],columns='PARTY').stack(0)
