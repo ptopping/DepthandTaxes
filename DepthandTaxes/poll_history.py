@@ -5,6 +5,7 @@ from scipy import stats
 from math import sqrt
 from statsmodels.tsa.stattools import acf
 from matplotlib import pyplot as plt
+
 sns.set_style('whitegrid')
 
 elechis_df = pd.read_excel('C:\\Users\\ptopp\\Documents\\DATFiles\\exit polls.xlsx',sheet_name='Sheet1')
@@ -19,16 +20,16 @@ gallupplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Ra
 gallupplot.despine(left=True)
 gallupplot.savefig('galluptimeseries.png')
 
-# roper_trunc = roper[(roper['Year'] >= 1980) & (roper['Race'] == 'White')]
-# gallup_trunc = gallup[(gallup['Year'] <= 1996)]
-# merged_sample = roper_trunc.append(gallup_trunc)
-# merged_sample = merged_sample.append(r9.reset_index(drop=True))
-# mergeplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Source',data=merged_sample,col='Party')
-# mergeplot.savefig('elec10261803.png')
-# merged_sample
+roper_trunc = roper[(roper['Year'] >= 1980) & (roper['Race'] == 'White')]
+gallup_trunc = gallup[(gallup['Year'] <= 1996)]
+merged_sample = roper_trunc.append(gallup_trunc)
+merged_sample = merged_sample.append(r9.reset_index(drop=True))
+mergeplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Source',data=merged_sample,col='Party')
+mergeplot.savefig('elec10261803.png')
+merged_sample
 
 roper_race_samp = roper[(roper['Race'] == 'White') | (roper['Race'] == 'African-American') | (roper['Race'] == 'Hispanic')]
-raceplot = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_race_samp)
+raceplot = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_race_samp, scatter_kws={'edgecolors':'w'})
 raceplot.despine(left=True)
 raceplot.savefig('roper3racetimeseries.png')
 
@@ -47,73 +48,26 @@ a_hispanicdem = {'acf': acf(hispanicdem['Vote Pct.'],unbiased=True), 'Race': 'Hi
 results = [a_whiterep, a_blackrep, a_hispanicrep, a_whitedem, a_blackdem, a_hispanicdem]
 results = [pd.DataFrame(d) for d in results]
 results_df = pd.concat(results, sort=True).reset_index()
-results_df
 
-acfplot = sns.catplot(x='index', y='acf', col='Race', row='Party', kind='bar', ci=None)
-acfplot = sns.catplot(x='index', y='acf', data = results_df, col='Race', row='Party', kind='bar', ci=None, hue='Race')
-(acfplot.despine(left=True).set(xlim=(1, 5)))
+acfplot = sns.catplot(x='index', y='acf', data = results_df, col='Race', row='Party', kind='bar', ci=None, hue='Race', sharex=False, sharey=False)
+acfplot.despine(left=True)
+acfplot.axes[0,0].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[0,0].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[0,1].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[0,1].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[0,2].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[0,2].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[1,0].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[1,0].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[1,1].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[1,1].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[1,2].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
+acfplot.axes[1,2].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
 
-
-
-raceplot2 = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_trunc)
-raceplot2.savefig('elec10141805.png')
-
-raceplot3 = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Race',data=roper_trunc,col='Party')
-raceplot3.savefig('elec10141806.png')
-
-sns.set_style('whitegrid')
-fig, axs = plt.subplots(1,3,sharey = True,figsize=(12,4))
-plt.xticks([1,2,3,4,5])
-#sns.barplot(x=results_df.index,y=results_df['HispanicDem'],data=results_df,color='red')
-g1 = axs[0].bar(results_df.index,results_df['WhiteRep'])
-g2 = axs[1].bar(results_df.index,results_df['BlackRep'],color='C1')
-g3 = axs[2].bar(results_df.index,results_df['HispanicRep'],color='C2')
-axs[0].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].set_xlim(.5,5.5)
-axs[0].set_xticks([1,2,3,4,5])
-axs[0].set_xlabel('White')
-axs[1].set_xlim(.5,5.5)
-axs[1].set_xticks([1,2,3,4,5])
-axs[1].set_xlabel('African American')
-axs[2].set_xlim(.5,5.5)
-axs[2].set_xticks([1,2,3,4,5])
-axs[2].set_xlabel('Hispanic')
-plt.ylim(-1,1)
-#plt.setp(plt.xticks(), (1,2,3,4,5))
-fig.suptitle('Republican Correlogram')
-plt.savefig('repcorr.png')
-
-sns.set_style('whitegrid')
-fig, axs = plt.subplots(1,3,sharey = True,figsize=(12,4))
-sns.set_palette('default')
-#sns.barplot(x=results_df.index,y=results_df['HispanicDem'],data=results_df,color='red')
-g1 = axs[0].bar(results_df.index,results_df['WhiteDem'])
-g2 = axs[1].bar(results_df.index,results_df['BlackDem'],color='C1')
-g3 = axs[2].bar(results_df.index,results_df['HispanicDem'],color='C2')
-axs[0].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].set_xlim(.5,5.5)
-axs[0].set_xticks([1,2,3,4,5])
-axs[0].set_xlabel('White')
-axs[1].set_xlim(.5,5.5)
-axs[1].set_xticks([1,2,3,4,5])
-axs[1].set_xlabel('African American')
-axs[2].set_xlim(.5,5.5)
-axs[2].set_xticks([1,2,3,4,5])
-axs[2].set_xlabel('Hispanic')
-plt.ylim(-1,1)
-#plt.setp(plt.xticks(), (1,2,3,4,5))
-fig.suptitle('Democratic Correlogram')
-#plt.savefig('demcorr.png')
+roper_race_trunc = roper_race_samp[roper_race_samp['Year'] >= 1980]
+race_trunc_plot = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_race_trunc, scatter_kws={'edgecolors':'w'})
+race_trunc_plot.despine(left=True)
+race_trunc_plot.savefig('roper3racetimeseriestrunc.png')
 
 r1 = roper[roper['Race'] != 'White']
 r1['inter'] = r1['Pct.'].multiply(r1['Vote Pct.'])
@@ -132,145 +86,24 @@ r8 = r6.xs('Republican',level='Party')
 r8['Party'] = 'Republican'
 r9 = r7.append(r8)
 r9 = r9.reset_index()
-r9
+roper_trunc = roper[(roper['Year'] >= 1980) & (roper['Race'] == 'White')]
+gallup_trunc = gallup[(gallup['Year'] <= 1996)]
+merged_sample = roper_trunc.append(gallup_trunc)
+merged_sample = merged_sample.append(r9.reset_index(drop=True))
+mergeplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Source',data=merged_sample,col='Party')
+mergeplot.despine(left=True)
+mergeplot.savefig('combinedtimeseries.png')
 
-roper_race_samp = roper[(roper['Race'] == 'White') | (roper['Race'] == 'African-American') | (roper['Race'] == 'Hispanic')]
-roper_race_samp
+var = pd.DataFrame({'Party':['Democratic','Democratic','Democratic','Republican','Republican','Republican'],'Race':['White','African-American','Hispanic','White','African-American','Hispanic'],
+	'Stand Dev':[whitedem['Vote Pct.'].std(),blackdem['Vote Pct.'].std(),hispanicdem['Vote Pct.'].std(),whiterep['Vote Pct.'].std(),blackrep['Vote Pct.'].std(),hispanicrep['Vote Pct.'].std()]})
+varplot = sns.catplot(x='Party',y='Stand Dev',data=var,kind='point',hue='Race')
 
-results = {}
-nlags=6
-whiterep = roper[(roper['Race'] == 'White') & (roper['Party'] == 'Republican')]
-blackrep = roper[(roper['Race'] == 'African-American') & (roper['Party'] == 'Republican')]
-hispanicrep = roper[(roper['Race'] == 'Hispanic') & (roper['Party'] == 'Republican')]
-whitedem = roper[(roper['Race'] == 'White') & (roper['Party'] == 'Democratic')]
-blackdem = roper[(roper['Race'] == 'African-American') & (roper['Party'] == 'Democratic')]
-hispanicdem =roper[(roper['Race'] == 'Hispanic') & (roper['Party'] == 'Democratic')]
-results['WhiteRep'] = [acf_by_hand(whiterep['Vote Pct.'], lag) for lag in range(nlags)]
-results['BlackRep'] = [acf_by_hand(blackrep['Vote Pct.'], lag) for lag in range(nlags)]
-results['HispanicRep'] = [acf_by_hand(hispanicrep['Vote Pct.'], lag) for lag in range(nlags)]
-results['WhiteDem'] = [acf_by_hand(whitedem['Vote Pct.'], lag) for lag in range(nlags)]
-results['BlackDem'] = [acf_by_hand(blackdem['Vote Pct.'], lag) for lag in range(nlags)]
-results['HispanicDem'] = [acf_by_hand(hispanicdem['Vote Pct.'], lag) for lag in range(nlags)]
-results_df = pd.DataFrame(results)
-results_df
-#sns.barplot(x=results_df.index,y=results_df['WhiteRep'],data=results_df,color='red')
-#stats.ttest_1samp(results['WhiteRep'][1:],0)
-
-samplemean = results_df.BlackDem
-tstat = stats.ttest_1samp(results['BlackDem'][1:],0)[0]
-samplestd = results_df.BlackDem.std()
-n = results_df.BlackDem.count()
-[0 + tstat * (samplestd/sqrt(n)), 0 - tstat * (samplestd/sqrt(n))]
-
-statsmodels.graphics.tsaplots.plot_acf(blackdem['Vote Pct.'],unbiased=True,zero=False)
-
-plt.acorr(blackdem['Vote Pct.'],maxlags=None)
-
-statsmodels.tsa.stattools.acf(blackdem['Vote Pct.'],unbiased=True)
-
-blackdem['Vote Pct.'].autocorr(2)
-
-plt.xcorr(x=blackdem['Vote Pct.'][1:],y=blackdem['Vote Pct.'].shift()[1:],maxlags=None)
-
-blackdem['Vote Pct.'].shift()
-
-def acf_by_hand(x, lag):
-    # Slice the relevant subseries based on the lag
-    y1 = x[:(len(x)-lag)]
-    y2 = x[lag:]
-    # Subtract the mean of the whole series x to calculate Cov
-    sum_product = np.sum((y1-np.mean(x))*(y2-np.mean(x)))
-    # Normalize with var of whole series
-    return sum_product / ((len(x) - lag) * np.var(x))
-
-    def acf(Y,k):
-        #Calculate the numerator
-        lagged_val = Y.shift(k)
-
-Y = blackdem['Vote Pct.']
-
-blackdem['lagged_val'] = blackdem['Vote Pct.'].shift(1)
-blackdem
-
-((Y.shift(1)-Y.mean())*(Y-Y.mean())).sum()
-
-((Y-Y.mean())**2).sum()
-
-((Y.shift(3)-Y.mean())*(Y-Y.mean())).sum()/((Y[2:]-Y.mean())**2).sum()
-
-blackdem['Vote Pct.'].autocorr(1)/(1/sqrt(len(blackdem['Vote Pct.'])-1))
-
-2/sqrt(len(blackdem['Vote Pct.']))
-
-results = {}
-whiterep = roper[(roper['Race'] == 'White') & (roper['Party'] == 'Republican')]
-blackrep = roper[(roper['Race'] == 'African-American') & (roper['Party'] == 'Republican')]
-hispanicrep = roper[(roper['Race'] == 'Hispanic') & (roper['Party'] == 'Republican')]
-whitedem = roper[(roper['Race'] == 'White') & (roper['Party'] == 'Democratic')]
-blackdem = roper[(roper['Race'] == 'African-American') & (roper['Party'] == 'Democratic')]
-hispanicdem =roper[(roper['Race'] == 'Hispanic') & (roper['Party'] == 'Democratic')]
-results['WhiteRep'] = acf(whiterep['Vote Pct.'],unbiased=True)
-results['BlackRep'] = acf(blackrep['Vote Pct.'],unbiased=True)
-results['HispanicRep'] = acf(hispanicrep['Vote Pct.'],unbiased=True)
-results['WhiteDem'] = acf(whitedem['Vote Pct.'],unbiased=True)
-results['BlackDem'] = acf(blackdem['Vote Pct.'],unbiased=True)
-results['HispanicDem'] = acf(hispanicdem['Vote Pct.'],unbiased=True)
-results_df = pd.DataFrame(results)
-results_df
-
-sns.set_style('whitegrid')
-fig, axs = plt.subplots(1,3,sharey = True,figsize=(12,4))
-plt.xticks([1,2,3,4,5])
-#sns.barplot(x=results_df.index,y=results_df['HispanicDem'],data=results_df,color='red')
-g1 = axs[0].bar(results_df.index,results_df['WhiteRep'])
-g2 = axs[1].bar(results_df.index,results_df['BlackRep'],color='C1')
-g3 = axs[2].bar(results_df.index,results_df['HispanicRep'],color='C2')
-axs[0].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].set_xlim(.5,5.5)
-axs[0].set_xticks([1,2,3,4,5])
-axs[0].set_xlabel('White')
-axs[1].set_xlim(.5,5.5)
-axs[1].set_xticks([1,2,3,4,5])
-axs[1].set_xlabel('African American')
-axs[2].set_xlim(.5,5.5)
-axs[2].set_xticks([1,2,3,4,5])
-axs[2].set_xlabel('Hispanic')
-plt.ylim(-1.5,1.5)
-#plt.setp(plt.xticks(), (1,2,3,4,5))
-fig.suptitle('Republican Correlogram')
-plt.savefig('repcorr.png')
-
-2/sqrt(len(results_df)-1)
-
-sns.set_style('whitegrid')
-fig, axs = plt.subplots(1,3,sharey = True,figsize=(12,4))
-#plt.set_cmap('winter')
-#sns.barplot(x=results_df.index,y=results_df['HispanicDem'],data=results_df,color='red')
-g1 = axs[0].bar(results_df.index,results_df['WhiteDem'])
-g2 = axs[1].bar(results_df.index,results_df['BlackDem'],color='C1')
-g3 = axs[2].bar(results_df.index,results_df['HispanicDem'],color='C2')
-axs[0].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[1].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[2].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-axs[0].set_xlim(.5,5.5)
-axs[0].set_xticks([1,2,3,4,5])
-axs[0].set_xlabel('White')
-axs[1].set_xlim(.5,5.5)
-axs[1].set_xticks([1,2,3,4,5])
-axs[1].set_xlabel('African American')
-axs[2].set_xlim(.5,5.5)
-axs[2].set_xticks([1,2,3,4,5])
-axs[2].set_xlabel('Hispanic')
-plt.ylim(-1.5,1.5)
-#plt.setp(plt.xticks(), (1,2,3,4,5))
-fig.suptitle('Democratic Correlogram')
-
-
+roperplot_mean = sns.relplot(x='Year',y='Vote Pct.',kind='scatter',hue='Race',data=roper_race_samp,col='Party')
+roperplot_mean.despine(left=True)
+roperplot_mean.axes[0,0].axhline(y=whiterep['Vote Pct.'].mean(),color='C0',alpha=.8)
+roperplot_mean.axes[0,0].axhline(y=blackrep['Vote Pct.'].mean(),color='C1',alpha=.8)
+roperplot_mean.axes[0,0].axhline(y=hispanicrep['Vote Pct.'].mean(),color='C2',alpha=.8)
+roperplot_mean.axes[0,1].axhline(y=whitedem['Vote Pct.'].mean(),color='C0',alpha=.8)
+roperplot_mean.axes[0,1].axhline(y=blackdem['Vote Pct.'].mean(),color='C1',alpha=.8)
+roperplot_mean.axes[0,1].axhline(y=hispanicdem['Vote Pct.'].mean(),color='C2',alpha=.8)
+roperplot_mean.axes[0,1].fill([1976,2016,2016,1976],[.5,.5,.75,.75], 'C1', alpha=.5)

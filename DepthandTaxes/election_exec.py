@@ -2,8 +2,8 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
-from DepthandTaxes.elections import results
-from DepthandTaxes.elections import census
+from DepthandTaxes.tools import results
+from DepthandTaxes.tools import census
 
 census2000 = census.CensusLoad('st-est00int-alldata',kind='group').pretty()
 census2010 = census.CensusLoad('sc-est2017-alldata6').projection()
