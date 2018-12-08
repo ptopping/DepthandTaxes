@@ -66,9 +66,11 @@ data.drop_duplicates(inplace=True)
 data = data.apply(np.log10)
 data.columns = data.columns.str.title()
 g = sns.PairGrid(data)
-g = g.map(plt.scatter)
+g = g.map(plt.scatter, edgecolor="w")
 g.savefig('corrmatrix.png')
-data.corr().to_html() # .style.background_gradient()
+g2 = sns.FacetGrid(data)
+g2.axes = sns.heatmap(data.corr(), annot=True, annot_kws = {'fontsize': 'small'}, cmap='Blues')
+g2.savefig('correlations.png')
 
 sns.set_palette('seismic',7)
 data = results.AllData(df).cat_var()
@@ -76,7 +78,6 @@ g = sns.catplot(data=data, x='Party', y='Log10(Votes)', hue='Party', col='Divisi
 g.savefig('pres_bi_categorical.png')
 
 data = results.AllData(df).regression(output='fit')
-# data = data.style
 data.to_html()
 
 data = results.AllData(df).residuals()

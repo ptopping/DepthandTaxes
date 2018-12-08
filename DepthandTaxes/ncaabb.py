@@ -1,6 +1,8 @@
 import pandas as pd
 import seaborn as sns
 
+sns.set_style('darkgrid')
+
 def frameget(year):
     url = 'http://www.sports-reference.com/cbb/play-index/tourney.cgi?request=1&match=single&year_min={0}&year_max={0}&seed_cmp=eq&opp_seed_cmp=eq&game_result=W&pts_diff_cmp=eq&order_by_single=date_game&order_by_combined=g'.format(year)
     init = pd.read_html(url)
