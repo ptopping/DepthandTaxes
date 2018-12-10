@@ -79,103 +79,125 @@ class QBStats(object):
 		df.reset_index(drop=True,inplace=True)
 		return df
 
-def spider(df):
-    '''Creates faceted radar charts for Standardized Passing statistics
-    '''
-    df.reset_index(drop=True,inplace=True)
-    categories=list(df)[5:]
-    N = len(categories)
+def spider(df,sheet,category):
+	'''Creates faceted radar charts for Standardized Passing statistics
+	'''
+	try:
 
-    # What will be the angle of each axis in the plot? (we divide the plot / number of variable)
-    angles = [n / float(N) * 2 * pi for n in range(N)]
-    angles += angles[:1]
+		df = df[df['Cat'] == category]
+		df.reset_index(drop=True,inplace=True)
+		categories=list(df)[5:]
+		N = len(categories)
 
-    df['Close'] = df['z_CmpPct']
-    df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
+		# What will be the angle of each axis in the plot? (we divide the plot / number of variable)
+		angles = [n / float(N) * 2 * pi for n in range(N)]
+		angles += angles[:1]
 
-    map_loc = dict(zip(categories,angles))
-    map_loc['Close'] = 0
-    df1.variable = df1.variable.map(map_loc)
-    
-    sns.set_style('whitegrid')
+		df['Close'] = df['z_CmpPct']
+		df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
 
-    g = sns.FacetGrid(df1, col='Name', hue="Tm", subplot_kws=dict(projection='polar'), col_wrap=3,
-    sharex=False, sharey=False, despine=False, palette=nfl_pal)
-    g = (g.map(plt.plot,'variable','value')).set(ylim = (-3,3), xticks = angles[:-1], rlabel_position = 45,
-    theta_offset = (pi / 3), theta_direction = -1)
-    g = g.map(plt.fill,'variable','value',alpha=.5).set_axis_labels('','')
-    g = g.set_xticklabels(['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct'])
-    g = g.set_titles('{col_name}')
-    plt.tight_layout()
-    g.savefig('{}.png'.format(df.iloc[0,3]))
+		map_loc = dict(zip(categories,angles))
+		map_loc['Close'] = 0
+		df1.variable = df1.variable.map(map_loc)
+	    
+		sns.set_style('whitegrid')
 
-def uniplot(df):
-    sns.set_style('darkgrid')
-    g = sns.FacetGrid(data=df, sharex=False, sharey=False)
-    g = g.map(plt.hist, 'Rate')
-    plt.tight_layout()
-#     g.savefifg('{}.png'.format()) #TODO
-    
-    g2 = sns.FacetGrid(data=df, sharex=False, sharey=False)
-    g2 = g2.map(plt.hist, 'Wins')
-    plt.tight_layout()
-#     g2.savefig('{}.png'.format()) #TODO
-    
-    df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
-    g3 = sns.FacetGrid(data=df1, col='variable', col_wrap=2, sharex=False, sharey=False)
-    g3 = g3.map(plt.hist, 'value')
-    plt.tight_layout()
-#     g3.savefig('{}.png'.format()) #TODO
-    
-def biplot(df):
-    sns.set_style('darkgrid')
-    df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
-    df1.reset_index(inplace=True)
-    g = sns.relplot(x='value', y='Wins', data=df1, col='variable', col_wrap=2, kind='scatter')
-#     g.savefig('{}.png'.format())
-    
-    g1 = sns.PairGrid(df[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
-    g1.map(plt.scatter)
-#     g1.savefig('{}.png'.format())
+		g = sns.FacetGrid(df1, col='Name', hue="Tm", subplot_kws=dict(projection='polar'), col_wrap=3,
+		sharex=False, sharey=False, despine=False, palette=nfl_pal)
+		g = (g.map(plt.plot,'variable','value')).set(ylim = (-3,3), xticks = angles[:-1], rlabel_position = 45,
+		theta_offset = (pi / 3), theta_direction = -1)
+		g = g.map(plt.fill,'variable','value',alpha=.5).set_axis_labels('','')
+		g = g.set_xticklabels(['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct'])
+		g = g.set_titles('{col_name}')
+		plt.tight_layout()
+		g.savefig('{}{}.png'.format(sheet,category))
 
-week1 = QBStats(NFLSpread,'Week 1!A1:AE')
-week2 = QBStats(NFLSpread,'Week 2!A1:AE')
-week3 = QBStats(NFLSpread,'Week 3!A1:AE')
-week4 = QBStats(NFLSpread,'Week 4!A1:AE')
-week5 = QBStats(NFLSpread,'Week 5!A1:AE')
-week6 = QBStats(NFLSpread,'Week 6!A1:AE')
-week7 = QBStats(NFLSpread,'Week 7!A1:AE')
-week8 = QBStats(NFLSpread,'Week 8!A1:AE')
-week9 = QBStats(NFLSpread,'Week 9!A1:AE')
-week10 = QBStats(NFLSpread,'Week 10!A1:AE')
-week11 = QBStats(NFLSpread,'Week 11!A1:AE')
-week12 = QBStats(NFLSpread,'Week 12!A1:AE')
-week13 = QBStats(NFLSpread,'Week 13!A1:AE')
+	except AttributeError:
+		pass
 
-data10 = []
+def uniplot(df,dfname):
+	sns.set_style('darkgrid')
+	g = sns.FacetGrid(data=df, sharex=False, sharey=False)
+	g = g.map(plt.hist, 'Rate')
+	plt.tight_layout()
+	g.savefig('{}ratedist.png'.format(dfname)) 
+
+	g2 = sns.FacetGrid(data=df, sharex=False, sharey=False)
+	g2 = g2.map(plt.hist, 'Wins')
+	plt.tight_layout()
+	g2.savefig('{}depdist.png'.format(dfname)) 
+
+	df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate','G'])
+	g3 = sns.FacetGrid(data=df1, col='variable', col_wrap=2, sharex=False, sharey=False)
+	g3 = g3.map(plt.hist, 'value')
+	plt.tight_layout()
+	g3.savefig('{}indepdist.png'.format(dfname))
+
+def biplot(df,dfname):
+	sns.set_style('darkgrid')
+	df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
+	df1.reset_index(inplace=True)
+	g = sns.relplot(x='value', y='Wins', data=df1, col='variable', col_wrap=2, kind='scatter')
+	g.savefig('{}bivar.png'.format(dfname))
+
+	g1 = sns.PairGrid(df[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
+	g1.map(plt.scatter, edgecolor='w')
+	g1.savefig('{}matrix.png'.format(dfname))
+
+	g2 = sns.FacetGrid(df)
+	g2.axes = sns.heatmap(df[['Wins','z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']].corr(), annot=True, cmap='Blues')	
+	g2.savefig('{}corr.png'.format(dfname))
+
+week1 = QBStats(NFLSpread,'Week 1!A1:AE').zscore()
+week2 = QBStats(NFLSpread,'Week 2!A1:AE').zscore()
+week3 = QBStats(NFLSpread,'Week 3!A1:AE').zscore()
+week4 = QBStats(NFLSpread,'Week 4!A1:AE').zscore()
+week5 = QBStats(NFLSpread,'Week 5!A1:AE').zscore()
+week6 = QBStats(NFLSpread,'Week 6!A1:AE').zscore()
+week7 = QBStats(NFLSpread,'Week 7!A1:AE').zscore()
+week8 = QBStats(NFLSpread,'Week 8!A1:AE').zscore()
+week9 = QBStats(NFLSpread,'Week 9!A1:AE').zscore()
+week10 = QBStats(NFLSpread,'Week 10!A1:AE').zscore()
+week11 = QBStats(NFLSpread,'Week 11!A1:AE').zscore()
+week12 = QBStats(NFLSpread,'Week 12!A1:AE').zscore()
+
+qbdata = []
 for y in range(2008,2018):
-	data10.append(QBStats(NFLSpread,'{}!A1:AE'.format(y)).zscore())
-data10 = pd.concat(data10,sort=True)
+	qbdata.append(QBStats(NFLSpread,'{}!A1:AE'.format(y)).zscore())
+qbdata = pd.concat(qbdata,sort=True)
 
-y, X = data10['Wins'], data10[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']]
+uniplot(qbdata,'qbdata')
+biplot(qbdata,'qbdata')
+
+y, X = qbdata['Wins'], qbdata[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']]
 reg = LassoCV(cv=5).fit(X, y)
 lasso = LassoCV(cv=5)
-reg.score(X,y)
+reg.score(X,y) 
 
-data10['PredictedWins'] = reg.predict(X)
-sqrt(mean_squared_error(data10['Wins'],data10['PredictedWins']))
+pd.DataFrame(list(zip(['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct'],reg.coef_)))
 
-
+qbdata['PredictedWins'] = reg.predict(X)
+sqrt(mean_squared_error(qbdata['Wins'],qbdata['PredictedWins']))
 
 salary = pd.read_html('https://www.spotrac.com/nfl/rankings/cap-hit/quarterback/')
 salary = salary[0]
 sa_name = salary['Player'].str.split(expand=True)
 sa_name['Name'] = sa_name.iloc[:,0] + ' ' + sa_name.iloc[:,1]
 salary = salary.join(sa_name)
-week12 = QBStats(NFLSpread,'Week 12!A1:AE').zscore()
-week12['PredictedWins'] = reg.predict(week12[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
-data = week12.merge(salary[['cap hit','Name']],how='left', left_on='Name',right_on='Name')
+
+week13['PredictedWins'] = reg.predict(week13[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
+data = week13.merge(salary[['cap hit','Name']],how='left', left_on='Name',right_on='Name')
 data['cap hit'].replace(regex=r'\D+',value='',inplace=True)
 data['cap hit'] = data['cap hit'].apply(pd.to_numeric)
-data['efficiency'] = data['cap hit']/data['PredictedWins']
-sns.relplot(data=data, kind='scatter', x='cap hit', y='PredictedWins', hue='Tm', palette=nfl_pal)
+data['Cap Hit/Predicted Win'] = data['cap hit']/data['PredictedWins']
+data['Win Percentage'] = data['Wins']/data['G']
+
+
+g = sns.relplot(kind='scatter', data=data, x='Cap Hit/Predicted Win', y='Win Percentage', hue='Tm', palette=nfl_pal)
+g.savefig('scatterwins.png')
+g = sns.lmplot(data=data, x='Cap Hit/Predicted Win', y='Win Percentage', scatter_kws={'edgecolors':'w'})
+g.savefig('regwins.png')
+
+data.sort_values('Cap Hit/Predicted Win').reset_index(drop=True).to_html()
+
+
