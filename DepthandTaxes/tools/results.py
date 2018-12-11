@@ -737,17 +737,44 @@ class AllData(object):
 		df.columns = df.columns.str.title()
 		return df
 		
-	def outcome(self):
-		'''Create dataframe for final mapping of predicted outcome'''
+	def mapping(self,results='ACTUAL;,year):
+		'''Create state choropleth maps'''
 		df = self.regression(output='dataframe')
+		sns.set_style('white')
 		
-		#Reshape the dataframe and create sum column
-		df = df.pivot_table(index=['STATE','YEAR'],columns='PARTY').stack(0)
-		df['TOTAL VOTE'] = df.sum(axis=1)
+		#Reshape the dataframe determine partisan lean
+		df = df.[['YEAR', 'STATE', 'PARTY', 'ACTUAL VOTES', 'PREDICTED VOTES']].set_index(['YEAR','STATE','PARTY']).unstack()
+		df.loc[:,('ACTUAL LEAN','Democratic')] = df['ACTUAL VOTES','Democratic'] - df['ACTUAL VOTES','Republican']
+		df.loc[:,('PREDICTED LEAN','Democratic')] = df['PREDICTED VOTES','Democratic'] - df['PREDICTED VOTES','Republican']
+		df = df.stack().reset_index()
 		
-		#Calculate partisan lean
-		if self.office == 'President':
-			df['DEM%'] = df['Democratic'] / DF['TOTAL VOTE']
-			df['REP%'] = df['Republican'] / DF['TOTAL VOTE']
-			df['DEM_LEAN'] = df['DEM%'] - df['REP%']
+		#Import state shapefile and create GeoPandas frame
+		states = gdp.read_file('C:\\Users\\ptopp\\Documents\\DATFiles\\tl_2018_us_state.shp')
 		
+		#Merge GeoPandas frame with election results
+		df = states.merge(df[df['PARTY']=='Democratic'], how='left', left_on='NAME', right_on='STATE')
+
+		#Break up full US for easier mapping of Alaska and Hawaii
+		lower48 = df[(df['NAME']!='Alaska') & (df['NAME']!='Hawaii') & (df['YEAR']==year)]
+		alaska = df[(df['NAME']=='Alaska') & (df['YEAR']==year)]
+		hawaii = df[(df['NAME']=='Hawaii') & (df['YEAR']==year)]		
+		
+		#Create fig and axes in GridSpec
+		fig = plt.figure(constrained_layout=True,figsize=(10,4))
+		gs = fig.add_gridspec(3, 3)
+		ax1 = fig.add_subplot(gs[:,1:4])
+		ax2 = fig.add_subplot(gs[0, 0])
+		ax3 = fig.add_subplot(gs[1,0])
+
+		#Remove spines
+		ax1.axis('off')
+		ax2.axis('off')
+		ax3.axis('off')
+
+		#Plot actual or predicted election results		
+		lower48.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax1, vmin=-4.5e6, vmax=4.5e6, edgecolor='gray')
+		alaska.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax2, vmin=-4.5e6, vmax=4.5e6, edgecolor='gray')
+		hawaii.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax3, vmin=-4.5e6, vmax=4.5e6, edgecolor='gray')
+
+		#Center Alaska
+		ax2.set_xlim(right=-120)
