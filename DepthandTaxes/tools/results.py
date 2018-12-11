@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import math
+import matplotlib.pyplot as plt
+import seaborn as sns
+import geopandas as gpd
 from sklearn.linear_model import LassoCV
 from sklearn.metrics import mean_squared_error
 # from DepthandTaxes.elections.headers import make_headers
@@ -737,19 +740,19 @@ class AllData(object):
 		df.columns = df.columns.str.title()
 		return df
 		
-	def mapping(self,results='ACTUAL;,year):
+	def mapping(self,year,results='ACTUAL'):
 		'''Create state choropleth maps'''
 		df = self.regression(output='dataframe')
 		sns.set_style('white')
 		
 		#Reshape the dataframe determine partisan lean
-		df = df.[['YEAR', 'STATE', 'PARTY', 'ACTUAL VOTES', 'PREDICTED VOTES']].set_index(['YEAR','STATE','PARTY']).unstack()
+		df = df[['YEAR', 'STATE', 'PARTY', 'ACTUAL VOTES', 'PREDICTED VOTES']].set_index(['YEAR','STATE','PARTY']).unstack()
 		df.loc[:,('ACTUAL LEAN','Democratic')] = df['ACTUAL VOTES','Democratic'] - df['ACTUAL VOTES','Republican']
 		df.loc[:,('PREDICTED LEAN','Democratic')] = df['PREDICTED VOTES','Democratic'] - df['PREDICTED VOTES','Republican']
 		df = df.stack().reset_index()
 		
 		#Import state shapefile and create GeoPandas frame
-		states = gdp.read_file('C:\\Users\\ptopp\\Documents\\DATFiles\\tl_2018_us_state.shp')
+		states = gpd.read_file('C:\\Users\\ptopp\\Documents\\DATFiles\\tl_2018_us_state.shp')
 		
 		#Merge GeoPandas frame with election results
 		df = states.merge(df[df['PARTY']=='Democratic'], how='left', left_on='NAME', right_on='STATE')
@@ -772,9 +775,12 @@ class AllData(object):
 		ax3.axis('off')
 
 		#Plot actual or predicted election results		
-		lower48.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax1, vmin=-4.5e6, vmax=4.5e6, edgecolor='gray')
-		alaska.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax2, vmin=-4.5e6, vmax=4.5e6, edgecolor='gray')
-		hawaii.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax3, vmin=-4.5e6, vmax=4.5e6, edgecolor='gray')
+		lower48.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax1, vmin=-4.5e6, vmax=4.5e6, edgecolor='gainsboro')
+		alaska.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax2, vmin=-4.5e6, vmax=4.5e6, edgecolor='gainsboro')
+		hawaii.plot(cmap='seismic_r', column=('{} LEAN'.format(results)),ax=ax3, vmin=-4.5e6, vmax=4.5e6, edgecolor='gainsboro')
 
 		#Center Alaska
 		ax2.set_xlim(right=-120)
+
+		#Add Title
+		fig.suptitle('{} {} LEAN'.format(year,results).title())
