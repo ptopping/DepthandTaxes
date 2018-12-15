@@ -49,7 +49,7 @@ class FECLoad(object):
 
 		#Check election year
 		if year == 2016:
-			self.excel = pd.read_excel('C:\\Users\\ptopp\\Documents\\DATFiles\\{file}.xlsx'.format(file=excel), header=None, sheet_name=None)
+			self.excel = pd.read_excel('..\\DATFiles\\{file}.xlsx'.format(file=excel), header=None, sheet_name=None)
 			self.pres_general = make_headers(self.excel.get('2016 Pres General Results'), year)
 			self.pres_primary = make_headers(self.excel.get('2016 Pres Primary Results'), year)
 			self.senate = make_headers(self.excel.get('2016 US Senate Results by State'), year)
@@ -58,7 +58,7 @@ class FECLoad(object):
 			self.dates = self.excel.get('2016 Primary Dates')
 
 		else:
-			self.excel = pd.read_excel('C:\\Users\\ptopp\\Documents\\DATFiles\\{file}.xls'.format(file=excel), header=None, sheet_name=None)
+			self.excel = pd.read_excel('..\\DATFiles\\{file}.xls'.format(file=excel), header=None, sheet_name=None)
 
 			if year == 2000:
 				if is_pres == True:
