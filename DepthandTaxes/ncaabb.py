@@ -28,7 +28,7 @@ g = sns.catplot(x='WinnerSeed', data=results_df, order = ['1','2','3','4','5','6
 g.set_ylabels('Total Games Won')
 g.set_xlabels('Seed')
 g.despine(left=True)
-g.savefig('ncaabb_totalwins.png')
+g.savefig('..\\DATFiles\\ncaabb_totalwins.png')
 
 secondround = results_df[((results_df['Round']=='Second Round') & ((results_df['Year'] <= 2010) | (results_df['Year'] > 2015))) | 
 ((results_df['Round']=='Third Round') & ((results_df['Year'] >= 2011) & (results_df['Year'] <= 2015)))]
@@ -41,6 +41,6 @@ g = sns.catplot(x='value',y='WIN2', data=games, order = ['1','2','3','4','5','6'
 g.set_ylabels('2nd Round Win Percentage')
 g.set_xlabels('Seed')
 g.despine(left=True)
-g.savefig('ncaabb_rd2winpct.png')
+g.savefig('..\\DATFiles\\ncaabb_rd2winpct.png')
 
 
