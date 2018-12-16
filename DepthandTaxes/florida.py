@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from statsmodels.formula.api import ols
 
-df_dict = pd.read_excel('C:\Users\jen\Downloads\\2016general_partyrace.xlsx',sheet_name=None)
+df_dict = pd.read_excel('..\\DATFiles\\2016general_partyrace.xlsx',sheet_name=None)
 df_dict.keys()
 
 sheet2 = df_dict.get('Sheet2')
