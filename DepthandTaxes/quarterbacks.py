@@ -120,33 +120,33 @@ def uniplot(df,dfname):
 	g = sns.FacetGrid(data=df, sharex=False, sharey=False)
 	g = g.map(plt.hist, 'Rate')
 	plt.tight_layout()
-	g.savefig('..\\DATFiles\\{}ratedist.png'.format(dfname)) 
+	g.savefig('{}ratedist.png'.format(dfname)) 
 
 	g2 = sns.FacetGrid(data=df, sharex=False, sharey=False)
 	g2 = g2.map(plt.hist, 'Wins')
 	plt.tight_layout()
-	g2.savefig('..\\DATFiles\\{}depdist.png'.format(dfname)) 
+	g2.savefig('{}depdist.png'.format(dfname)) 
 
 	df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate','G'])
 	g3 = sns.FacetGrid(data=df1, col='variable', col_wrap=2, sharex=False, sharey=False)
 	g3 = g3.map(plt.hist, 'value')
 	plt.tight_layout()
-	g3.savefig('..\\DATFiles\\{}indepdist.png'.format(dfname))
+	g3.savefig('{}indepdist.png'.format(dfname))
 
 def biplot(df,dfname):
 	sns.set_style('darkgrid')
 	df1 = df.melt(id_vars=['Name','Tm','Cat','Wins','Rate'])
 	df1.reset_index(inplace=True)
 	g = sns.relplot(x='value', y='Wins', data=df1, col='variable', col_wrap=2, kind='scatter')
-	g.savefig('..\\DATFiles\\{}bivar.png'.format(dfname))
+	g.savefig('{}bivar.png'.format(dfname))
 
 	g1 = sns.PairGrid(df[['z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']])
 	g1.map(plt.scatter, edgecolor='w')
-	g1.savefig('..\\DATFiles\\{}matrix.png'.format(dfname))
+	g1.savefig('{}matrix.png'.format(dfname))
 
 	g2 = sns.FacetGrid(df)
 	g2.axes = sns.heatmap(df[['Wins','z_CmpPct', 'z_YardsPer', 'z_TDPct','z_IntPct']].corr(), annot=True, cmap='Blues')	
-	g2.savefig('..\\DATFiles\\{}corr.png'.format(dfname))
+	g2.savefig('{}corr.png'.format(dfname))
 
 week1 = QBStats(NFLSpread,'Week 1!A1:AE').zscore()
 week2 = QBStats(NFLSpread,'Week 2!A1:AE').zscore()
@@ -194,9 +194,9 @@ data['Win Percentage'] = data['Wins']/data['G']
 
 
 g = sns.relplot(kind='scatter', data=data, x='Cap Hit/Predicted Win', y='Win Percentage', hue='Tm', palette=nfl_pal)
-g.savefig('..\\DATFiles\\scatterwins.png')
+g.savefig('scatterwins.png')
 g = sns.lmplot(data=data, x='Cap Hit/Predicted Win', y='Win Percentage', scatter_kws={'edgecolors':'w'})
-g.savefig('..\\DATFiles\\regwins.png')
+g.savefig('regwins.png')
 
 data.sort_values('Cap Hit/Predicted Win').reset_index(drop=True).to_html()
 
