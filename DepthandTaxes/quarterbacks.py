@@ -43,9 +43,7 @@ class QBStats(object):
 	def zscore(self):
 		'''Creates a DataFrame of Passer Rating Components and performs a z transform
 		'''
-		df = dataframe
-		df = pd.DataFrame(df,columns=df[0])
-		df = df.iloc[1:]
+		df = self.df.iloc[1:]
 	#     df['Cmp'] = df['Cmp'].astype('float')
 	#     df['Att'] = df['Att'].astype('float')
 	#     df['Yds'] = df['Yds'].astype('float')
@@ -78,6 +76,33 @@ class QBStats(object):
 		df[['Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']] = df[['Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']].apply(pd.to_numeric)
 		df.reset_index(drop=True,inplace=True)
 		return df
+
+df = x.df.iloc[1:]
+df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']] = df[['Cmp', 'Att', 'Yds', 'TD', 'Int', 'G']].astype('float')
+df['IntPct'] = 1 - df['Int']/df['Att']
+df['AttPer'] = df['Att']/df['G']
+df[['CmpPct', 'YardsPer', 'TDPct']] = df[['Cmp', 'Yds', 'TD']].div(df['Att'].values, axis=0)
+df['IntPct'] = 1-df['Int'].div(df['Att'].values, axis=0)
+df = df[['Name','Tm','QBrec','Rate','Cmp','Att','Yds','TD','Int','AttPer','CmpPct','YardsPer','TDPct','IntPct']]
+df['Wins'] = df['QBrec'].str.split('-',expand=False).str[0]
+df = df[['Name','Tm','Cmp','Rate','Att','Yds','TD','Int','AttPer','CmpPct','YardsPer','TDPct','IntPct','Wins']]
+df['z_CmpPct'] = (df.CmpPct - df.CmpPct.mean())/df.CmpPct.std()
+df['z_YardsPer'] = (df.YardsPer - df.YardsPer.mean())/df.YardsPer.std()
+df['z_TDPct'] = (df.TDPct - df.TDPct.mean())/df.TDPct.std()
+df['z_IntPct'] = (df.IntPct - df.IntPct.mean())/df.IntPct.std()
+df['Above'] = (df[['z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]>=1).sum(1)
+df['Below'] = (df[['z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]<=-1).sum(1)
+df.loc[df['Above'] == 4, 'Cat'] = 'GOAT'
+df.loc[df['Below'] == 4, 'Cat'] = 'Train'
+df.loc[(df['Above'] == 0) & (df['Below'] == 0), 'Cat'] = 'Mediocre'
+df.loc[(df['Above'] >= 1) & (df['Above'] <= 3) & (df['Below'] == 0), 'Cat'] = 'Good'
+df.loc[(df['Above'] >= 1) & (df['Below'] >= 1), 'Cat'] = 'Mixed'
+df.loc[(df['Above'] == 0) & (df['Below'] <= 3) & (df['Below'] >= 1), 'Cat'] = 'Bad'
+df = df[['Name','Tm','Cat','Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']]
+df[['Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']] = df[['Wins','Rate','z_CmpPct','z_YardsPer','z_TDPct','z_IntPct']].apply(pd.to_numeric)
+df.reset_index(drop=True,inplace=True)
+df
+
 
 def spider(df,sheet,category):
 	'''Creates faceted radar charts for Standardized Passing statistics
@@ -160,6 +185,9 @@ week9 = QBStats(NFLSpread,'Week 9!A1:AE').zscore()
 week10 = QBStats(NFLSpread,'Week 10!A1:AE').zscore()
 week11 = QBStats(NFLSpread,'Week 11!A1:AE').zscore()
 week12 = QBStats(NFLSpread,'Week 12!A1:AE').zscore()
+week13 = QBStats(NFLSpread,'Week 13!A1:AE').zscore()
+week14 = QBStats(NFLSpread,'Week 14!A1:AE').zscore()
+week15 = QBStats(NFLSpread,'Week 15!A1:AE').zscore()
 
 qbdata = []
 for y in range(2008,2018):

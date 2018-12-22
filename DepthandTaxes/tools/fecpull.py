@@ -110,7 +110,10 @@ class FECPull(object):
 		is_house = self.is_house
 		cols = {np.nan:'UNUSED','LASTNAME,FIRST':'LASTNAMEFIRST','TOTALVOTES#':'TOTALVOTESNUMBER','GENERAL%':'GENERALPCT','PRIMARY%':'PRIMARYPCT','FECID#':'FECID','RUNOFF%':'RUNOFFPCT',
 		'GERUNOFFELECTION%(LA)':'GERUNOFFELECTIONPCT','COMBINED%(CT,NY,SC)':'COMBINEDPCT',0:'ABBREVIATION', 1:'EQUALS', 2:'PARTYNAME','#OFVOTES':'NUMBEROFVOTES','#':'IDNUMBER', 
-		'GERUNOFF%':'GERUNOFFPCT','COMBINED%(NY,SC)':'COMBINEDPCT', 'COMBINED%(CT,NY)':'COMBINEDPCT','(I)':'INCUMBENT','GENERALRUNOFF%':'GENERALRUNOFFPCT'}
+		'GERUNOFF%':'GERUNOFFPCT','COMBINED%(NY,SC)':'COMBINEDPCT', 'COMBINED%(CT,NY)':'COMBINEDPCT','(I)':'INCUMBENT','GENERALRUNOFF%':'GENERALRUNOFFPCT','NOTES(SeeEndnotesPage)':'NOTES',
+		'Notes(SeeEndnotesTab)':'NOTES','COMBINEDGEPARTYTOTALS(NY,SC)':'COMBINEDGEPARTYTOTALS', 'INCUMBENTINDICATOR(I)':'INCUMBENTINDICATOR', 'CANDIDATENAME(First)': 'CANDIDATENAMEFIRST',
+		'CandidateName(Last)':'CANDIDATENAMELAST','COMBINEDGEPARTYTOTALS(CT,NY)':'COMBINEDGEPARTYTOTALS','CANDIDATENAME(Last)':'CANDIDATENAMELAST','CANDIDATENAME(Last,First)':'CANDIDATENAME',
+		'COMBINEDGEPARTYTOTALS(CT,NY,SC)':'COMBINEDGEPARTYTOTALS', 'GERUNOFFELECTIONVOTES(LA)':'GERUNOFFELECTIONVOTES'}
 
 		if year == 2016:
 			df = self.make_headers(self.pres_general,0)
@@ -139,6 +142,7 @@ class FECPull(object):
 			
 			df = self.labels
 			df.rename(columns=cols,inplace=True)
+			df = df.iloc[5:,]
 			df.index.names = ['ROWID']
 			csv = open('..\\DATFiles\\labels2016.csv','w')
 			csv.write(df.to_csv())
@@ -208,6 +212,7 @@ class FECPull(object):
 
 				df = self.labels
 				df.rename(columns=cols,inplace=True)
+				df = df.iloc[3:,]
 				df.index.names = ['ROWID']			
 				csv = open('..\\DATFiles\\labels2002.csv','w')
 				csv.write(df.to_csv())
@@ -218,7 +223,6 @@ class FECPull(object):
 				csv = open('..\\DATFiles\\primarydates2002.csv','w')
 				csv.write(df.to_csv())
 				csv.close()
-				return df
 
 			if year == 2004:
 				df = self.make_headers(self.pres_general,0)
@@ -241,6 +245,7 @@ class FECPull(object):
 				
 				df = self.labels
 				df.rename(columns=cols,inplace=True)
+				df = df.iloc[7:,]
 				df.index.names = ['ROWID']
 				csv = open('..\\DATFiles\\labels2004.csv','w')
 				csv.write(df.to_csv())
@@ -262,6 +267,7 @@ class FECPull(object):
 
 				df = self.labels
 				df.rename(columns=cols,inplace=True)
+				df = df.iloc[7:,]			
 				df.index.names = ['ROWID']
 				csv = open('..\\DATFiles\\labels2006.csv','w')
 				csv.write(df.to_csv())
@@ -295,6 +301,7 @@ class FECPull(object):
 
 				df = self.labels 
 				df.rename(columns=cols,inplace=True)
+				df = df.iloc[5:,]
 				df.index.names = ['ROWID']
 				csv = open('..\\DATFiles\\labels2008.csv','w')
 				csv.write(df.to_csv())
@@ -316,6 +323,7 @@ class FECPull(object):
 
 				df = self.labels 
 				df.rename(columns=cols,inplace=True)
+				df = df.iloc[5:,]
 				df.index.names = ['ROWID']
 				csv = open('..\\DATFiles\\labels2010.csv','w')
 				csv.write(df.to_csv())
@@ -349,6 +357,7 @@ class FECPull(object):
 				df = self.labels
 				df.index.names = ['ROWID']
 				df.rename(columns=cols,inplace=True)
+				df = df.iloc[5:,]
 				csv = open('..\\DATFiles\\labels2012.csv','w')
 				csv.write(df.to_csv())
 				csv.close()			
@@ -363,24 +372,28 @@ class FECPull(object):
 				df = self.make_headers(self.senate ,0)
 				df.rename(columns=cols,inplace=True)
 				csv = open('..\\DATFiles\\senate2014.csv','w')
-				csv.write(df.to_csv().encode('UTF-8'))
+				csv.write(df.to_csv(encoding='utf-8'))
 				csv.close()			
 
 				df = self.make_headers(self.house ,0)
+				df.loc[:,'CANDIDATENAME(First)'] = df.loc[:,'CANDIDATENAME(First)'].str.replace('\u0101','a')
+				df.loc[:,'CANDIDATENAME(Last)'] = df.loc[:,'CANDIDATENAME(Last)'].str.replace('\u0101','a')
+				df.loc[:,'CANDIDATENAME'] = df.loc[:,'CANDIDATENAME'].str.replace('\u0101','a')
 				df.rename(columns=cols,inplace=True)
 				csv = open('..\\DATFiles\\house2014.csv','w')
-				csv.write(df.to_csv().encode('UTF-8'))
+				csv.write(df.to_csv(encoding='utf-8'))
 				csv.close()			
 
 				df = self.labels
 				df.index.names = ['ROWID']
 				df.rename(columns=cols,inplace=True)
+				df = df.iloc[5:,]
 				csv = open('..\\DATFiles\\labels2014.csv','w')
-				csv.write(df.to_csv().encode('UTF-8'))
+				csv.write(df.to_csv(encoding='utf-8'))
 				csv.close()			
 
 				df = self.make_headers(self.dates,4)
 				df.rename(columns=cols,inplace=True)
 				csv = open('..\\DATFiles\\primarydates2014.csv','w')
-				csv.write(df.to_csv().encode('UTF-8'))
+				csv.write(df.to_csv(encoding='utf-8'))
 				csv.close()			
