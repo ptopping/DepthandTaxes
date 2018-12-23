@@ -8,17 +8,17 @@ from matplotlib import pyplot as plt
 
 sns.set_style('whitegrid')
 
-elechis_df = pd.read_excel('C:\\Users\\ptopp\\Documents\\DATFiles\\exit polls.xlsx',sheet_name='Sheet1')
+elechis_df = pd.read_excel('..\\DATFiles\\exit polls.xlsx',sheet_name='Sheet1')
 roper = elechis_df[elechis_df['Source'] == 'Roper']
 gallup = elechis_df[elechis_df['Source'] == 'Gallup']
 
 roperplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Race',data=roper,col='Party')
 roperplot.despine(left=True)
-roperplot.savefig('ropertimeseries.png')
+roperplot.savefig('..\\DATFiles\\ropertimeseries.png')
 
 gallupplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Race',data=gallup,col='Party')
 gallupplot.despine(left=True)
-gallupplot.savefig('galluptimeseries.png')
+gallupplot.savefig('..\\DATFiles\\galluptimeseries.png')
 
 r1 = roper[roper['Race'] != 'White']
 r1['inter'] = r1['Pct.'].multiply(r1['Vote Pct.'])
@@ -43,12 +43,12 @@ merged_sample = roper_trunc.append(gallup_trunc)
 merged_sample = merged_sample.append(r9.reset_index(drop=True))
 mergeplot = sns.relplot(x='Year',y='Vote Pct.',kind='line',hue='Race',style='Source',data=merged_sample,col='Party')
 mergeplot.despine(left=True)
-mergeplot.savefig('combinedtimeseries.png')
+mergeplot.savefig('..\\DATFiles\\combinedtimeseries.png')
 
 roper_race_samp = roper[(roper['Race'] == 'White') | (roper['Race'] == 'African-American') | (roper['Race'] == 'Hispanic')]
 raceplot = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_race_samp, scatter_kws={'edgecolors':'w', 'linewidth':1})
 raceplot.despine(left=True)
-raceplot.savefig('roper3racetimeseries.png')
+raceplot.savefig('..\\DATFiles\\roper3racetimeseries.png')
 
 whiterep = roper[(roper['Race'] == 'White') & (roper['Party'] == 'Republican')]
 blackrep = roper[(roper['Race'] == 'African-American') & (roper['Party'] == 'Republican')]
@@ -80,17 +80,17 @@ acfplot.axes[1,1].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dot
 acfplot.axes[1,1].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
 acfplot.axes[1,2].axhline(y=2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
 acfplot.axes[1,2].axhline(y=-2/sqrt(len(whiterep)-1),color='black',linestyle='dotted')
-acfplot.savefig('acgplot.png')
+acfplot.savefig('..\\DATFiles\\acfplot.png')
 
 roper_race_trunc = roper_race_samp[roper_race_samp['Year'] >= 1980]
 race_trunc_plot = sns.lmplot(x='Year',y='Vote Pct.',hue='Race',col='Party',data=roper_race_trunc, scatter_kws={'edgecolors':'w', 'linewidth':1})
 race_trunc_plot.despine(left=True)
-race_trunc_plot.savefig('roper3racetimeseriestrunc.png')
+race_trunc_plot.savefig('..\\DATFiles\\roper3racetimeseriestrunc.png')
 
 var = pd.DataFrame({'Party':['Democratic','Democratic','Democratic','Republican','Republican','Republican'],'Race':['White','African-American','Hispanic','White','African-American','Hispanic'],
 	'Mean Average Deviation':[whitedem['Vote Pct.'].mad(),blackdem['Vote Pct.'].mad(),hispanicdem['Vote Pct.'].mad(),whiterep['Vote Pct.'].mad(),blackrep['Vote Pct.'].mad(),hispanicrep['Vote Pct.'].mad()]})
 varplot = sns.catplot(x='Party',y='Mean Average Deviation',data=var,kind='point',hue='Race')
-varplot.savefig('madplot.png')
+varplot.savefig('..\\DATFiles\\madplot.png')
 
 # roperplot_mean = sns.relplot(x='Year',y='Vote Pct.',kind='scatter',hue='Race',data=roper_race_samp,col='Party')
 # roperplot_mean.despine(left=True)
