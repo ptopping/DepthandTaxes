@@ -366,7 +366,7 @@ WITH pg2000 AS (
         END party,
         to_number(regexp_replace(presprimary2004.primaryresults, '\D+')) primaryvotes,
         presprimary2004.notes,
-        TO_DATE(primarydate, 'YYYY-MM-DD HH24:MI:SS') primarydate,
+        TO_DATE(presprimary2004.primarydate, 'YYYY-MM-DD HH24:MI:SS') primarydate,
         CASE
             WHEN presprimary2004.party IN (
                 'W',
@@ -1082,6 +1082,7 @@ WITH pg2000 AS (
             ELSE TRIM(presprimary2016.party)
         END party,
         to_number(regexp_replace(presprimary2016.primaryresults, '\D+')) primaryvotes,
+        TO_DATE(presprimary2016.primarydate, 'YYYY-MM-DD HH24:MI:SS') primarydate,
         presprimary2016.footnotes               notes,
         CASE
             WHEN presprimary2016.party IN (
@@ -1366,117 +1367,554 @@ WITH pg2000 AS (
                 REGEXP_LIKE ( primarydate,
                               '[RD]' )
         )
-), pd2002 as (SELECT
-    initcap(primarydates2002.statename) statename,
-    TO_DATE(primarydates2002.primarydate, 'YYYY-MM-DD HH24:MI:SS') primarydate,
-    TO_DATE(primarydates2002.runoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
-FROM
-    primarydates2002
-    where statename is not null),
-pd2004 as (SELECT
-    initcap(statename) statename,
-    TO_DATE(primary, 'YYYY-MM-DD HH24:MI:SS') primarydate,
-    TO_DATE(runoff, 'YYYY-MM-DD HH24:MI:SS') runoffdate
-FROM
-    primarydates2004
-    where statename is not null),
-pd2006 as (SELECT
-    initcap(statename) statename,
-    add_months(TO_DATE(primary, 'YYYY-MM-DD HH24:MI:SS'), -12) primarydate,
-    add_months(TO_DATE(runoff, 'YYYY-MM-DD HH24:MI:SS'), -12) runoffdate
-FROM
-    primarydates2006
-    where statename is not null),
-pd2008 as (SELECT
-    initcap(statename) statename,
-    add_months(TO_DATE(congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS'), -12) primarydate,
-    add_months(TO_DATE(congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS'), -12) runoffdate
-FROM
-    primarydates2008
-    where statename is not null),
-pd2010 as (SELECT
-    initcap(statename) statename,
-    TO_DATE(congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS') primarydate,
-    TO_DATE(congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
-FROM
-    primarydates2010
-    where statename is not null),
-pd2012 as (SELECT
-    statename,
-    CASE
-        WHEN EXTRACT(YEAR FROM primarydate) = 2012 THEN primarydate
-        ELSE add_months(primarydate, 12 *(2012 - EXTRACT(YEAR FROM primarydate)))
-    END primarydate,
-    runoffdate
-FROM
-    (
-        SELECT
-            initcap(primarydates2012.statename) statename,
-            CASE
-                WHEN REGEXP_LIKE ( primarydates2012.congressionalprimarydate,
-                                   '\/' ) THEN TO_DATE(regexp_substr(primarydates2012.congressionalprimarydate, '^\d\/\d{2}')
-                                                       || '/'
-                                                       || '2012', 'MM/DD/YYYY')
-                ELSE TO_DATE(primarydates2012.congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS')
-            END primarydate,
-            TO_DATE(primarydates2012.congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
-        FROM
-            primarydates2012
-        WHERE
-            primarydates2012.statename IS NOT NULL
-    )),
-pd2014 as (SELECT
-            initcap(statename) statename,
-            CASE
-                WHEN REGEXP_LIKE ( congressionalprimarydate,
-                                   '\/' ) THEN TO_DATE(regexp_substr(congressionalprimarydate, '^\d\/\d+')
-                                                       || '/'
-                                                       || '2014', 'MM/DD/YYYY')
-                ELSE TO_DATE(congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS')
-            END primarydate,
-            TO_DATE(congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
-        FROM
-            primarydates2014
-        WHERE
-            statename IS NOT NULL),
-pd2016 as (SELECT
-            initcap(statename) statename,
-            CASE
-                WHEN REGEXP_LIKE ( congressionalprimary,
-                                   '\/' ) THEN TO_DATE(regexp_substr(congressionalprimary, '^\d\/\d+')
-                                                       || '/'
-                                                       || '2016', 'MM/DD/YYYY')
-                ELSE add_months(TO_DATE(congressionalprimary, 'YYYY-MM-DD HH24:MI:SS'),-12)
-            END primarydate,
-            add_months(TO_DATE(congressionalrunoff, 'YYYY-MM-DD HH24:MI:SS'),-12) runoffdate
-        FROM
-            primarydates2016
-        WHERE
-            statename IS NOT NULL),
-            p2000 as (
-SElect case
-when pg.postal is null then pp.postal else pg.postal end postal,
-case
-when pg.candidatenamefirst is null then pp.candidatenamefirst else pg.candidatenamefirst end candidatenamefirst,
-case
-when pg.candidatenamelast is null then pp.candidatenamelast else pg.candidatenamelast end candidatenamelast,
-case
-when pg.candidatename is null then pp.candidatename else pg.candidatename end candidatename,
-case
-when pg.party is null then pp.party else pg.party end party,
-pp.primaryvotes,
-pg.generalvotes,
-case
-when pg.writein is null then pp.writein else pg.writein end writein
-from (select postal, candidatenamefirst, candidatenamelast, candidatename, party, sum(generalvotes) generalvotes, writein
-from pg2000 group by postal, candidatenamefirst, candidatenamelast, candidatename, party, writein) pg
-full outer join (select postal, candidatenamefirst, candidatenamelast, candidatename, party, sum(primaryvotes) primaryvotes, writein
-from pp2000 group by postal, candidatenamefirst, candidatenamelast, candidatename, party, writein) pp on 
-pg.postal = pp.postal
-and pg.candidatenamefirst = pp.candidatenamefirst
-and pg.candidatenamelast = pp.candidatenamelast
-and pg.candidatename = pp.candidatename
-and pg.party = pp.party
-and pg.writein = pp.writein)
-select * from p2000 order by postal
-
+), pd2002 AS (
+    SELECT
+        initcap(primarydates2002.statename) statename,
+        TO_DATE(primarydates2002.primarydate, 'YYYY-MM-DD HH24:MI:SS') primarydate,
+        TO_DATE(primarydates2002.runoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
+    FROM
+        primarydates2002
+    WHERE
+        primarydates2002.statename IS NOT NULL
+), pd2004 AS (
+    SELECT
+        initcap(primarydates2004.statename) statename,
+        TO_DATE(primarydates2004.primary, 'YYYY-MM-DD HH24:MI:SS') primarydate,
+        TO_DATE(primarydates2004.runoff, 'YYYY-MM-DD HH24:MI:SS') runoffdate
+    FROM
+        primarydates2004
+    WHERE
+        primarydates2004.statename IS NOT NULL
+), pd2006 AS (
+    SELECT
+        initcap(primarydates2006.statename) statename,
+        add_months(TO_DATE(primarydates2006.primary, 'YYYY-MM-DD HH24:MI:SS'), - 12) primarydate,
+        add_months(TO_DATE(primarydates2006.runoff, 'YYYY-MM-DD HH24:MI:SS'), - 12) runoffdate
+    FROM
+        primarydates2006
+    WHERE
+        primarydates2006.statename IS NOT NULL
+), pd2008 AS (
+    SELECT
+        initcap(primarydates2008.statename) statename,
+        add_months(TO_DATE(primarydates2008.congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS'), - 12) primarydate,
+        add_months(TO_DATE(primarydates2008.congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS'), - 12) runoffdate
+    FROM
+        primarydates2008
+    WHERE
+        primarydates2008.statename IS NOT NULL
+), pd2010 AS (
+    SELECT
+        initcap(primarydates2010.statename) statename,
+        TO_DATE(primarydates2010.congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS') primarydate,
+        TO_DATE(primarydates2010.congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
+    FROM
+        primarydates2010
+    WHERE
+        primarydates2010.statename IS NOT NULL
+), pd2012 AS (
+    SELECT
+        statename,
+        CASE
+            WHEN EXTRACT(YEAR FROM primarydate) = 2012 THEN primarydate
+            ELSE add_months(primarydate, 12 *(2012 - EXTRACT(YEAR FROM primarydate)))
+        END primarydate,
+        runoffdate
+    FROM
+        (
+            SELECT
+                initcap(primarydates2012.statename) statename,
+                CASE
+                    WHEN REGEXP_LIKE ( primarydates2012.congressionalprimarydate,
+                                       '\/' ) THEN TO_DATE(regexp_substr(primarydates2012.congressionalprimarydate, '^\d\/\d{2}')
+                                                           || '/'
+                                                           || '2012', 'MM/DD/YYYY')
+                    ELSE TO_DATE(primarydates2012.congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS')
+                END primarydate,
+                TO_DATE(primarydates2012.congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
+            FROM
+                primarydates2012
+            WHERE
+                primarydates2012.statename IS NOT NULL
+        )
+), pd2014 AS (
+    SELECT
+        initcap(primarydates2014.statename) statename,
+        CASE
+            WHEN REGEXP_LIKE ( primarydates2014.congressionalprimarydate,
+                               '\/' ) THEN TO_DATE(regexp_substr(primarydates2014.congressionalprimarydate, '^\d\/\d+')
+                                                   || '/'
+                                                   || '2014', 'MM/DD/YYYY')
+            ELSE TO_DATE(primarydates2014.congressionalprimarydate, 'YYYY-MM-DD HH24:MI:SS')
+        END primarydate,
+        TO_DATE(primarydates2014.congressionalrunoffdate, 'YYYY-MM-DD HH24:MI:SS') runoffdate
+    FROM
+        primarydates2014
+    WHERE
+        primarydates2014.statename IS NOT NULL
+), pd2016 AS (
+    SELECT
+        initcap(primarydates2016.statename) statename,
+        CASE
+            WHEN REGEXP_LIKE ( primarydates2016.congressionalprimary,
+                               '\/' ) THEN TO_DATE(regexp_substr(primarydates2016.congressionalprimary, '^\d\/\d+')
+                                                   || '/'
+                                                   || '2016', 'MM/DD/YYYY')
+            ELSE add_months(TO_DATE(primarydates2016.congressionalprimary, 'YYYY-MM-DD HH24:MI:SS'), - 12)
+        END primarydate,
+        add_months(TO_DATE(primarydates2016.congressionalrunoff, 'YYYY-MM-DD HH24:MI:SS'), - 12) runoffdate
+    FROM
+        primarydates2016
+    WHERE
+        primarydates2016.statename IS NOT NULL
+), p2000 AS (
+    SELECT
+        CASE
+            WHEN pg.postal IS NULL THEN pp.postal
+            ELSE pg.postal
+        END postal,
+        CASE
+            WHEN pg.candidatenamefirst IS NULL THEN pp.candidatenamefirst
+            ELSE pg.candidatenamefirst
+        END candidatenamefirst,
+        CASE
+            WHEN pg.candidatenamelast IS NULL THEN pp.candidatenamelast
+            ELSE pg.candidatenamelast
+        END candidatenamelast,
+        CASE
+            WHEN pg.candidatename IS NULL THEN pp.candidatename
+            ELSE pg.candidatename
+        END candidatename,
+        CASE
+            WHEN pg.party IS NULL THEN pp.party
+            ELSE pg.party
+        END party,
+        pp.primaryvotes,
+        pg.generalvotes,
+        CASE
+            WHEN pg.writein IS NULL THEN pp.writein
+            ELSE pg.writein
+        END writein
+    FROM
+        (
+            SELECT
+                pg2000.postal,
+                pg2000.candidatenamefirst,
+                pg2000.candidatenamelast,
+                pg2000.candidatename,
+                pg2000.party,
+                SUM(pg2000.generalvotes) generalvotes,
+                pg2000.writein
+            FROM
+                pg2000
+            GROUP BY
+                pg2000.postal,
+                pg2000.candidatenamefirst,
+                pg2000.candidatenamelast,
+                pg2000.candidatename,
+                pg2000.party,
+                pg2000.writein
+        ) pg
+        FULL OUTER JOIN (
+            SELECT
+                pp2000.postal,
+                pp2000.candidatenamefirst,
+                pp2000.candidatenamelast,
+                pp2000.candidatename,
+                pp2000.party,
+                SUM(pp2000.primaryvotes) primaryvotes,
+                pp2000.writein
+            FROM
+                pp2000
+            GROUP BY
+                pp2000.postal,
+                pp2000.candidatenamefirst,
+                pp2000.candidatenamelast,
+                pp2000.candidatename,
+                pp2000.party,
+                pp2000.writein
+        ) pp ON pg.postal = pp.postal
+                AND pg.candidatename = pp.candidatename
+                AND pg.party = pp.party
+), p2004 AS (
+    SELECT
+        CASE
+            WHEN pg.postal IS NULL THEN pp.postal
+            ELSE pg.postal
+        END postal,
+        CASE
+            WHEN pg.statename IS NULL THEN pp.statename
+            ELSE pg.statename
+        END statename,
+        CASE
+            WHEN pg.fecid IS NULL THEN pp.fecid
+            ELSE pg.fecid
+        END fecid,     
+        CASE
+            WHEN pg.candidatenamefirst IS NULL THEN pp.candidatenamefirst
+            ELSE pg.candidatenamefirst
+        END candidatenamefirst,
+        CASE
+            WHEN pg.candidatenamelast IS NULL THEN pp.candidatenamelast
+            ELSE pg.candidatenamelast
+        END candidatenamelast,
+        CASE
+            WHEN pg.candidatename IS NULL THEN pp.candidatename
+            ELSE pg.candidatename
+        END candidatename,
+        CASE
+            WHEN pg.party IS NULL THEN pp.party
+            ELSE pg.party
+        END party,
+        pp.primaryvotes,
+        pg.generalvotes,
+        CASE
+            WHEN pg.notes IS NULL THEN pp.notes
+            ELSE pg.notes
+        END notes,
+        pg.generalelectiondate,
+        pp.primarydate, 
+        CASE
+            WHEN pg.writein IS NULL THEN pp.writein
+            ELSE pg.writein
+        END writein
+    FROM
+        (
+            SELECT
+                pg2004.postal,
+                pg2004.statename,
+                pg2004.fecid,
+                pg2004.candidatenamefirst,
+                pg2004.candidatenamelast,
+                pg2004.candidatename,
+                pg2004.party,
+                SUM(pg2004.generalvotes) generalvotes,
+                pg2004.notes,
+                pg2004.generalelectiondate,
+                pg2004.writein
+            FROM
+                pg2004
+            GROUP BY
+                pg2004.postal,
+                pg2004.statename,
+                pg2004.fecid,
+                pg2004.candidatenamefirst,
+                pg2004.candidatenamelast,
+                pg2004.candidatename,
+                pg2004.party,
+                pg2004.notes,
+                pg2004.generalelectiondate,
+                pg2004.writein                
+        ) pg
+        FULL OUTER JOIN (
+            SELECT
+                pp2004.postal,
+                pp2004.statename,
+                pp2004.fecid,
+                pp2004.candidatenamefirst,
+                pp2004.candidatenamelast,
+                pp2004.candidatename,
+                pp2004.party,
+                SUM(pp2004.primaryvotes) primaryvotes,
+                pp2004.notes,
+                pp2004.primarydate,
+                pp2004.writein
+            FROM
+                pp2004
+            GROUP BY
+                pp2004.postal,
+                pp2004.statename,
+                pp2004.fecid,
+                pp2004.candidatenamefirst,
+                pp2004.candidatenamelast,
+                pp2004.candidatename,
+                pp2004.party,
+                pp2004.notes,
+                pp2004.primarydate,
+                pp2004.writein                
+        ) pp ON pg.postal = pp.postal
+                AND pg.fecid = pp.fecid
+                AND pg.party = pp.party
+), p2008 AS (
+    SELECT
+        CASE
+            WHEN pg.postal IS NULL THEN pp.postal
+            ELSE pg.postal
+        END postal,
+        CASE
+            WHEN pg.statename IS NULL THEN pp.statename
+            ELSE pg.statename
+        END statename,
+        CASE
+            WHEN pg.fecid IS NULL THEN pp.fecid
+            ELSE pg.fecid
+        END fecid,     
+        CASE
+            WHEN pg.candidatenamefirst IS NULL THEN pp.candidatenamefirst
+            ELSE pg.candidatenamefirst
+        END candidatenamefirst,
+        CASE
+            WHEN pg.candidatenamelast IS NULL THEN pp.candidatenamelast
+            ELSE pg.candidatenamelast
+        END candidatenamelast,
+        CASE
+            WHEN pg.candidatename IS NULL THEN pp.candidatename
+            ELSE pg.candidatename
+        END candidatename,
+        CASE
+            WHEN pg.party IS NULL THEN pp.party
+            ELSE pg.party
+        END party,
+        pp.primaryvotes,
+        pg.generalvotes,
+        pg.generalelectiondate,
+        pp.primarydate, 
+        CASE
+            WHEN pg.writein IS NULL THEN pp.writein
+            ELSE pg.writein
+        END writein
+    FROM
+        (
+            SELECT
+                pg2008.postal,
+                pg2008.statename,
+                pg2008.fecid,
+                pg2008.candidatenamefirst,
+                pg2008.candidatenamelast,
+                pg2008.candidatename,
+                pg2008.party,
+                SUM(pg2008.generalvotes) generalvotes,
+                pg2008.generalelectiondate,
+                pg2008.writein
+            FROM
+                pg2008
+            GROUP BY
+                pg2008.postal,
+                pg2008.statename,
+                pg2008.fecid,
+                pg2008.candidatenamefirst,
+                pg2008.candidatenamelast,
+                pg2008.candidatename,
+                pg2008.party,
+                pg2008.generalelectiondate,
+                pg2008.writein                
+        ) pg
+        FULL OUTER JOIN (
+            SELECT
+                pp2008.postal,
+                pp2008.statename,
+                pp2008.fecid,
+                pp2008.candidatenamefirst,
+                pp2008.candidatenamelast,
+                pp2008.candidatename,
+                pp2008.party,
+                SUM(pp2008.primaryvotes) primaryvotes,
+                pp2008.primarydate,
+                pp2008.writein
+            FROM
+                pp2008
+            GROUP BY
+                pp2008.postal,
+                pp2008.statename,
+                pp2008.fecid,
+                pp2008.candidatenamefirst,
+                pp2008.candidatenamelast,
+                pp2008.candidatename,
+                pp2008.party,
+                pp2008.primarydate,
+                pp2008.writein                
+        ) pp ON pg.postal = pp.postal
+                AND pg.fecid = pp.fecid
+                AND pg.party = pp.party
+), p2012 AS (
+    SELECT
+        CASE
+            WHEN pg.postal IS NULL THEN pp.postal
+            ELSE pg.postal
+        END postal,
+        CASE
+            WHEN pg.statename IS NULL THEN pp.statename
+            ELSE pg.statename
+        END statename,
+        CASE
+            WHEN pg.fecid IS NULL THEN pp.fecid
+            ELSE pg.fecid
+        END fecid,     
+        CASE
+            WHEN pg.candidatenamefirst IS NULL THEN pp.candidatenamefirst
+            ELSE pg.candidatenamefirst
+        END candidatenamefirst,
+        CASE
+            WHEN pg.candidatenamelast IS NULL THEN pp.candidatenamelast
+            ELSE pg.candidatenamelast
+        END candidatenamelast,
+        CASE
+            WHEN pg.candidatename IS NULL THEN pp.candidatename
+            ELSE pg.candidatename
+        END candidatename,
+        CASE
+            WHEN pg.party IS NULL THEN pp.party
+            ELSE pg.party
+        END party,
+        pp.primaryvotes,
+        pg.generalvotes,
+        pg.gewinner,
+        pg.generalelectiondate,
+        pp.primarydate, 
+        CASE
+            WHEN pg.writein IS NULL THEN pp.writein
+            ELSE pg.writein
+        END writein
+    FROM
+        (
+            SELECT
+                pg2012.postal,
+                pg2012.statename,
+                pg2012.fecid,
+                pg2012.candidatenamefirst,
+                pg2012.candidatenamelast,
+                pg2012.candidatename,
+                pg2012.party,
+                SUM(pg2012.generalvotes) generalvotes,
+                pg2012.gewinner,
+                pg2012.generalelectiondate,
+                pg2012.writein
+            FROM
+                pg2012
+            GROUP BY
+                pg2012.postal,
+                pg2012.statename,
+                pg2012.fecid,
+                pg2012.candidatenamefirst,
+                pg2012.candidatenamelast,
+                pg2012.candidatename,
+                pg2012.party,
+                pg2012.gewinner,
+                pg2012.generalelectiondate,
+                pg2012.writein                
+        ) pg
+        FULL OUTER JOIN (
+            SELECT
+                pp2012.postal,
+                pp2012.statename,
+                pp2012.fecid,
+                pp2012.candidatenamefirst,
+                pp2012.candidatenamelast,
+                pp2012.candidatename,
+                pp2012.party,
+                SUM(pp2012.primaryvotes) primaryvotes,
+                pp2012.primarydate,
+                pp2012.writein
+            FROM
+                pp2012
+            GROUP BY
+                pp2012.postal,
+                pp2012.statename,
+                pp2012.fecid,
+                pp2012.candidatenamefirst,
+                pp2012.candidatenamelast,
+                pp2012.candidatename,
+                pp2012.party,
+                pp2012.primarydate,
+                pp2012.writein                
+        ) pp ON pg.postal = pp.postal
+                AND pg.fecid = pp.fecid
+                AND pg.party = pp.party
+), p2016 AS (
+    SELECT
+        CASE
+            WHEN pg.postal IS NULL THEN pp.postal
+            ELSE pg.postal
+        END postal,
+        CASE
+            WHEN pg.statename IS NULL THEN pp.statename
+            ELSE pg.statename
+        END statename,
+        CASE
+            WHEN pg.fecid IS NULL THEN pp.fecid
+            ELSE pg.fecid
+        END fecid,     
+        CASE
+            WHEN pg.candidatenamefirst IS NULL THEN pp.candidatenamefirst
+            ELSE pg.candidatenamefirst
+        END candidatenamefirst,
+        CASE
+            WHEN pg.candidatenamelast IS NULL THEN pp.candidatenamelast
+            ELSE pg.candidatenamelast
+        END candidatenamelast,
+        CASE
+            WHEN pg.candidatename IS NULL THEN pp.candidatename
+            ELSE pg.candidatename
+        END candidatename,
+        CASE
+            WHEN pg.party IS NULL THEN pp.party
+            ELSE pg.party
+        END party,
+        pp.primaryvotes,
+        pg.generalvotes,
+        pg.gewinner,
+        pp.notes,
+        pg.generalelectiondate,
+        pp.primarydate, 
+        CASE
+            WHEN pg.writein IS NULL THEN pp.writein
+            ELSE pg.writein
+        END writein
+    FROM
+        (
+            SELECT
+                pg2016.postal,
+                pg2016.statename,
+                pg2016.fecid,
+                pg2016.candidatenamefirst,
+                pg2016.candidatenamelast,
+                pg2016.candidatename,
+                pg2016.party,
+                SUM(pg2016.generalvotes) generalvotes,
+                pg2016.gewinner,
+                pg2016.generalelectiondate,
+                pg2016.writein
+            FROM
+                pg2016
+            GROUP BY
+                pg2016.postal,
+                pg2016.statename,
+                pg2016.fecid,
+                pg2016.candidatenamefirst,
+                pg2016.candidatenamelast,
+                pg2016.candidatename,
+                pg2016.party,
+                pg2016.gewinner,
+                pg2016.generalelectiondate,
+                pg2016.writein                
+        ) pg
+        FULL OUTER JOIN (
+            SELECT
+                pp2016.postal,
+                pp2016.statename,
+                pp2016.fecid,
+                pp2016.candidatenamefirst,
+                pp2016.candidatenamelast,
+                pp2016.candidatename,
+                pp2016.party,
+                SUM(pp2016.primaryvotes) primaryvotes,
+                pp2016.notes,
+                pp2016.primarydate,
+                pp2016.writein
+            FROM
+                pp2016
+            GROUP BY
+                pp2016.postal,
+                pp2016.statename,
+                pp2016.fecid,
+                pp2016.candidatenamefirst,
+                pp2016.candidatenamelast,
+                pp2016.candidatename,
+                pp2016.party,
+                pp2016.notes,
+                pp2016.primarydate,
+                pp2016.writein                
+        ) pp ON pg.postal = pp.postal
+                AND pg.fecid = pp.fecid
+                AND pg.party = pp.party
+)
