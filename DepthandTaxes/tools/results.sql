@@ -1237,7 +1237,7 @@ WITH pg2000 AS (
         senate2016
     WHERE
         senate2016.candidatename IS NOT NULL
-), postal AS (
+), postalcodes AS (
     SELECT
         presgeneral2000.statename   postal,
         initcap(presgeneral2000.candidate) statename
@@ -1918,3 +1918,499 @@ WITH pg2000 AS (
                 AND pg.fecid = pp.fecid
                 AND pg.party = pp.party
 )
+SELECT
+	p2000.postal,
+	postalcodes.statename,
+	'President'	district,
+	NULL	fecid,
+	0 	incumbent,
+	p2000.candidatenamefirst,
+	p2000.candidatenamelast,
+	p2000.candidatename,
+	labels2000.partyname 	party,
+	p2000.primaryvotes,
+	p2000.primaryvotes / primpct.primaryvotes 	primarypct,
+	NULL 	runoffvotes,
+	NULL 	runoffpct,
+	p2000.generalvotes,
+	p2000.generalvotes / genpct.generalvotes generalpct,
+	NULL 	gerunoffelectionvotes,
+	NULL 	gerunoffelectionpct,
+	CASE
+		WHEN
+			multi.multi > 1	THEN combpct.generalvotes
+			ELSE NULL 
+		END combinedgepartytotals,
+	CASE
+		WHEN
+		multi.multi > 1	THEN combpct.generalvotes / genpct.generalvotes
+		ELSE NULL 
+	END combinedpct,
+	CASE 
+		WHEN 
+			combpct.generalvotes = gewin.maxvotes	THEN 1 
+		ELSE 0 
+	END gewinner,
+	NULL 	notes,
+	TO_DATE('11/07/2000', 'MM/DD/YYYY') 	generalelectiondate,
+	ppd2000.primarydate,
+	NULL 	runoffdate,
+	NULL 	gerunoffdate,
+	p2000.writein
+FROM 	
+	p2000
+LEFT JOIN postalcodes ON p2000.postal = postalcodes.postal
+LEFT JOIN labels2000 on p2000.party = TRIM(labels2000.abbreviation)
+LEFT JOIN (
+	SELECT 
+		postal, 
+		party, 
+		SUM(primaryvotes)	primaryvotes
+	FROM 
+		p2000 
+	GROUP BY 
+		postal, 
+		party
+	) primpct ON p2000.postal = primpct.postal
+				AND p2000.party = primpct.party
+LEFT JOIN (
+	SELECT 
+		postal, 
+		sum(generalvotes) 	generalvotes
+	FROM 
+		p2000 
+	GROUP BY 
+	postal
+	) genpct ON p2000.postal = genpct.postal
+LEFT JOIN (
+	SELECT 
+		candidatename, 
+		postal, 
+		SUM(generalvotes)	generalvotes
+	FROM 
+		p2000 
+	GROUP BY 
+		postal, 
+		candidatename
+	) combpct ON p2000.postal = combpct.postal
+				AND p2000.candidatename = combpct.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		candidatename, 
+		COUNT(generalvotes) 	multi
+	FROM 
+		p2000
+	GROUP BY 
+		postal, 
+		candidatename
+	) multi ON p2000.postal = multi.postal
+			AND p2000.candidatename = multi.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		MAX(generalvotes) 	maxvotes
+	FROM (
+		SELECT 
+			candidatename, 
+			postal, 
+			SUM(generalvotes) 	generalvotes
+		FROM 
+			p2000 
+		GROUP BY 
+			postal, 
+			candidatename
+		)
+	GROUP BY 
+		postal
+	) gewin ON p2000.postal = gewin.postal
+LEFT JOIN 
+	ppd2000
+ON postalcodes.statename = ppd2000.statename
+	AND p2000.party = ppd2000.party
+UNION
+SELECT
+	p2004.postal,
+	p2004.statename,
+	'President'	district,
+	p2004.fecid,
+	CASE
+		WHEN p2004.candidatename LIKE '%Bush%' THEN 1
+		ELSE 0
+	END incumbent,
+	p2004.candidatenamefirst,
+	p2004.candidatenamelast,
+	p2004.candidatename,
+	labels2004.partyname 	party,
+	p2004.primaryvotes,
+	p2004.primaryvotes / primpct.primaryvotes 	primarypct,
+	NULL 	runoffvotes,
+	NULL 	runoffpct,
+	p2004.generalvotes,
+	p2004.generalvotes / genpct.generalvotes generalpct,
+	NULL 	gerunoffelectionvotes,
+	NULL 	gerunoffelectionpct,
+	CASE
+		WHEN
+			multi.multi > 1	THEN combpct.generalvotes
+			ELSE NULL 
+		END combinedgepartytotals,
+	CASE
+		WHEN
+		multi.multi > 1	THEN combpct.generalvotes / genpct.generalvotes
+		ELSE NULL 
+	END combinedpct,
+	CASE 
+		WHEN 
+			combpct.generalvotes = gewin.maxvotes	THEN 1 
+		ELSE 0 
+	END gewinner,
+	p2004.notes,
+	p2004.generalelectiondate,
+	p2004.primarydate,
+	NULL 	runoffdate,
+	NULL 	gerunoffdate,
+	p2004.writein
+FROM 	
+	p2004
+LEFT JOIN labels2004 on p2004.party = TRIM(labels2004.abbreviation)
+LEFT JOIN (
+	SELECT 
+		postal, 
+		party, 
+		SUM(primaryvotes)	primaryvotes
+	FROM 
+		p2004 
+	GROUP BY 
+		postal, 
+		party
+	) primpct ON p2004.postal = primpct.postal
+				AND p2004.party = primpct.party
+LEFT JOIN (
+	SELECT 
+		postal, 
+		sum(generalvotes) 	generalvotes
+	FROM 
+		p2004 
+	GROUP BY 
+	postal
+	) genpct ON p2004.postal = genpct.postal
+LEFT JOIN (
+	SELECT 
+		candidatename, 
+		postal, 
+		SUM(generalvotes)	generalvotes
+	FROM 
+		p2004 
+	GROUP BY 
+		postal, 
+		candidatename
+	) combpct ON p2004.postal = combpct.postal
+				AND p2004.candidatename = combpct.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		candidatename, 
+		COUNT(generalvotes) 	multi
+	FROM 
+		p2004
+	GROUP BY 
+		postal, 
+		candidatename
+	) multi ON p2004.postal = multi.postal
+			AND p2004.candidatename = multi.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		MAX(generalvotes) 	maxvotes
+	FROM (
+		SELECT 
+			candidatename, 
+			postal, 
+			SUM(generalvotes) 	generalvotes
+		FROM 
+			p2004 
+		GROUP BY 
+			postal, 
+			candidatename
+		)
+	GROUP BY 
+		postal
+	) gewin ON p2004.postal = gewin.postal
+UNION
+SELECT
+	p2008.postal,
+	p2008.statename,
+	'President'	district,
+	p2008.fecid,
+	0 	incumbent,
+	p2008.candidatenamefirst,
+	p2008.candidatenamelast,
+	p2008.candidatename,
+	labels2008.partyname 	party,
+	p2008.primaryvotes,
+	p2008.primaryvotes / primpct.primaryvotes 	primarypct,
+	NULL 	runoffvotes,
+	NULL 	runoffpct,
+	p2008.generalvotes,
+	p2008.generalvotes / genpct.generalvotes generalpct,
+	NULL 	gerunoffelectionvotes,
+	NULL 	gerunoffelectionpct,
+	CASE
+		WHEN
+			multi.multi > 1	THEN combpct.generalvotes
+			ELSE NULL 
+		END combinedgepartytotals,
+	CASE
+		WHEN
+		multi.multi > 1	THEN combpct.generalvotes / genpct.generalvotes
+		ELSE NULL 
+	END combinedpct,
+	CASE 
+		WHEN 
+			combpct.generalvotes = gewin.maxvotes	THEN 1 
+		ELSE 0 
+	END gewinner,
+	NULL 	notes,
+	p2008.generalelectiondate,
+	p2008.primarydate,
+	NULL 	runoffdate,
+	NULL 	gerunoffdate,
+	p2008.writein
+FROM 	
+	p2008
+LEFT JOIN labels2008 on p2008.party = TRIM(labels2008.abbreviation)
+LEFT JOIN (
+	SELECT 
+		postal, 
+		party, 
+		SUM(primaryvotes)	primaryvotes
+	FROM 
+		p2008 
+	GROUP BY 
+		postal, 
+		party
+	) primpct ON p2008.postal = primpct.postal
+				AND p2008.party = primpct.party
+LEFT JOIN (
+	SELECT 
+		postal, 
+		sum(generalvotes) 	generalvotes
+	FROM 
+		p2008 
+	GROUP BY 
+	postal
+	) genpct ON p2008.postal = genpct.postal
+LEFT JOIN (
+	SELECT 
+		candidatename, 
+		postal, 
+		SUM(generalvotes)	generalvotes
+	FROM 
+		p2008 
+	GROUP BY 
+		postal, 
+		candidatename
+	) combpct ON p2008.postal = combpct.postal
+				AND p2008.candidatename = combpct.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		candidatename, 
+		COUNT(generalvotes) 	multi
+	FROM 
+		p2008
+	GROUP BY 
+		postal, 
+		candidatename
+	) multi ON p2008.postal = multi.postal
+			AND p2008.candidatename = multi.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		MAX(generalvotes) 	maxvotes
+	FROM (
+		SELECT 
+			candidatename, 
+			postal, 
+			SUM(generalvotes) 	generalvotes
+		FROM 
+			p2008 
+		GROUP BY 
+			postal, 
+			candidatename
+		)
+	GROUP BY 
+		postal
+	) gewin ON p2008.postal = gewin.postal
+UNION
+SELECT
+	p2012.postal,
+	p2012.statename,
+	'President'	district,
+	p2012.fecid,
+	CASE
+		WHEN p2012.candidatename LIKE '%Obama%' THEN 1
+		ELSE 0
+	END	incumbent,
+	p2012.candidatenamefirst,
+	p2012.candidatenamelast,
+	p2012.candidatename,
+	labels2012.partyname 	party,
+	p2012.primaryvotes,
+	p2012.primaryvotes / primpct.primaryvotes 	primarypct,
+	NULL 	runoffvotes,
+	NULL 	runoffpct,
+	p2012.generalvotes,
+	p2012.generalvotes / genpct.generalvotes generalpct,
+	NULL 	gerunoffelectionvotes,
+	NULL 	gerunoffelectionpct,
+	CASE
+		WHEN
+			multi.multi > 1	THEN combpct.generalvotes
+			ELSE NULL 
+		END combinedgepartytotals,
+	CASE
+		WHEN
+		multi.multi > 1	THEN combpct.generalvotes / genpct.generalvotes
+		ELSE NULL 
+	END combinedpct,
+	p2012.gewinner,
+	NULL 	notes,
+	p2012.generalelectiondate,
+	p2012.primarydate,
+	NULL 	runoffdate,
+	NULL 	gerunoffdate,
+	p2012.writein
+FROM 	
+	p2012
+LEFT JOIN labels2012 on p2012.party = TRIM(labels2012.abbreviation)
+LEFT JOIN (
+	SELECT 
+		postal, 
+		party, 
+		SUM(primaryvotes)	primaryvotes
+	FROM 
+		p2012 
+	GROUP BY 
+		postal, 
+		party
+	) primpct ON p2012.postal = primpct.postal
+				AND p2012.party = primpct.party
+LEFT JOIN (
+	SELECT 
+		postal, 
+		sum(generalvotes) 	generalvotes
+	FROM 
+		p2012 
+	GROUP BY 
+	postal
+	) genpct ON p2012.postal = genpct.postal
+LEFT JOIN (
+	SELECT 
+		candidatename, 
+		postal, 
+		SUM(generalvotes)	generalvotes
+	FROM 
+		p2012 
+	GROUP BY 
+		postal, 
+		candidatename
+	) combpct ON p2012.postal = combpct.postal
+				AND p2012.candidatename = combpct.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		candidatename, 
+		COUNT(generalvotes) 	multi
+	FROM 
+		p2012
+	GROUP BY 
+		postal, 
+		candidatename
+	) multi ON p2012.postal = multi.postal
+			AND p2012.candidatename = multi.candidatename
+UNION
+SELECT
+	p2016.postal,
+	p2016.statename,
+	'President'	district,
+	p2016.fecid,
+	0	incumbent,
+	p2016.candidatenamefirst,
+	p2016.candidatenamelast,
+	p2016.candidatename,
+	labels2016.partyname 	party,
+	p2016.primaryvotes,
+	p2016.primaryvotes / primpct.primaryvotes 	primarypct,
+	NULL 	runoffvotes,
+	NULL 	runoffpct,
+	p2016.generalvotes,
+	p2016.generalvotes / genpct.generalvotes generalpct,
+	NULL 	gerunoffelectionvotes,
+	NULL 	gerunoffelectionpct,
+	CASE
+		WHEN
+			multi.multi > 1	THEN combpct.generalvotes
+			ELSE NULL 
+		END combinedgepartytotals,
+	CASE
+		WHEN
+		multi.multi > 1	THEN combpct.generalvotes / genpct.generalvotes
+		ELSE NULL 
+	END combinedpct,
+	p2016.gewinner,
+	p2016.notes,
+	p2016.generalelectiondate,
+	p2016.primarydate,
+	NULL 	runoffdate,
+	NULL 	gerunoffdate,
+	p2016.writein
+FROM 	
+	p2016
+LEFT JOIN labels2016 on p2016.party = TRIM(labels2016.abbreviation)
+LEFT JOIN (
+	SELECT 
+		postal, 
+		party, 
+		SUM(primaryvotes)	primaryvotes
+	FROM 
+		p2016 
+	GROUP BY 
+		postal, 
+		party
+	) primpct ON p2016.postal = primpct.postal
+				AND p2016.party = primpct.party
+LEFT JOIN (
+	SELECT 
+		postal, 
+		sum(generalvotes) 	generalvotes
+	FROM 
+		p2016 
+	GROUP BY 
+	postal
+	) genpct ON p2016.postal = genpct.postal
+LEFT JOIN (
+	SELECT 
+		candidatename, 
+		postal, 
+		SUM(generalvotes)	generalvotes
+	FROM 
+		p2016 
+	GROUP BY 
+		postal, 
+		candidatename
+	) combpct ON p2016.postal = combpct.postal
+				AND p2016.candidatename = combpct.candidatename
+LEFT JOIN (
+	SELECT 
+		postal, 
+		candidatename, 
+		COUNT(generalvotes) 	multi
+	FROM 
+		p2016
+	GROUP BY 
+		postal, 
+		candidatename
+	) multi ON p2016.postal = multi.postal
+			AND p2016.candidatename = multi.candidatename
