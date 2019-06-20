@@ -7,11 +7,8 @@ from bs4 import BeautifulSoup
 from statistics import mean
 import matplotlib.pyplot as plt
 
-# df = pd.read_html('https://www.boxofficemojo.com/yearly/chart/?yr=2018&p=.htm')
-# df = df[3]
-# df.columns = df.iloc[0]
-# df = df.reindex(df.index.drop(0))
-# df.rename(columns={df.columns[2]: 'Studio'}, inplace=True)
+'https://www.boxofficemojo.com/yearly/chart/?page={}&view=releasedate&view2=domestic&yr={}&p=.htm'.format(page,year)
+pages = list(range(1,11))
 
 r = requests.get('https://www.boxofficemojo.com/yearly/chart/?yr=2018&p=.htm')
 soup = BeautifulSoup(r.text,'html.parser')
@@ -19,6 +16,9 @@ movies = soup.find_all(href=re.compile('movies'))[1:]
 
 df = pd.DataFrame()
 
+for p in pages:
+	try: 'https://www.boxofficemojo.com/yearly/chart/?page={}&view=releasedate&view2=domestic&yr={}&p=.htm'.format(p,year)
+		
 for m in movies:
 	url = 'https://www.boxofficemojo.com'+m.get('href')
 	r = requests.get(url)
