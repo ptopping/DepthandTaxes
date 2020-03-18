@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
-from  matplotlib.ticker import PercentFormatter
+from matplotlib.ticker import PercentFormatter
 from matplotlib.ticker import MaxNLocator
 
 # Global Color Palette Variables
@@ -106,7 +106,7 @@ class NFLPerformance(object):
             Transformed DataFrame.
         '''
         # Find offense and defense when the team is away
-        df = data[data['AWAYTEAM_ABBREVIATION']==self.team]
+        df = data[data['AWAYTEAM_ABBREVIATION'] == self.team]
         df.rename(columns={'AWAYTEAM_ABBREVIATION':'Abbreviation',
                   'HOMETEAM_ABBREVIATION':'Opponent_Abbreviation'},
                   inplace=True)
@@ -401,6 +401,13 @@ class NFLPerformance(object):
         # Format the y-axis to show percentage
         g.yaxis.set_major_formatter(PercentFormatter(1))
 
+        g.set_title('Win Percentage from {} to {}'.format(startyear,
+                                                          stopyear))        
+        
+        # Save the plot
+        g.figure.savefig('..\\DATFiles\\{}{}{}coach_analysis.png'
+                         .format(self.team, stopyear, coachname))
+
         # Plot Time Series of Win Pct
         g = plt.figure()
         g = sns.lineplot(x='Season', y='Win Percentage', hue='Team',
@@ -417,6 +424,12 @@ class NFLPerformance(object):
 
         # Format the y-axis to show percentage
         g.yaxis.set_major_formatter(PercentFormatter(1))
+
+        g.set_title('Time Series of Win Percentage from {} to {}'\
+                    .format(startyear, stopyear))
+
+        g.figure.savefig('..\\DATFiles\\{}{}{}timeseries.png'
+                         .format(self.team, stopyear, coachname))
 
         return (pd.DataFrame(comp, columns=['Wins', 'Losses', 'Ties']), p)
 
@@ -441,19 +454,17 @@ class NFLPerformance(object):
         sql_string = file.read()
 
         # Convert the sql query to a pandas DataFrame
-        data = pd.read_sql(sql=sql_string, con=self.con,
-                           params={'year': year})
+        df = pd.read_sql(sql=sql_string, con=self.con,
+                           params={'year': year, 'abbreviation':self.team})
 
-        # Find the complement statistic in each category
-        df = self.complements(data=data)
-        
         # Rename columns for pretty graphs
-        df.rename(columns={'PASSING_YARDS_OFF': 'Passing Offense',
-                           'RUSHING_YARDS_OFF': 'Rushing Offense',
-                           'PASSING_YARDS_DEF': 'Passing Defense',
-                           'RUSHING_YARDS_DEF': 'Rushing Defense'},
+        df.rename(columns={'PASSING_YARDS_OFFENSE': 'Passing Offense',
+                           'RUSHING_YARDS_OFFENSE': 'Rushing Offense',
+                           'PASSING_YARDS_DEFENSE': 'Passing Defense',
+                           'RUSHING_YARDS_DEFENSE': 'Rushing Defense',
+                           'ABBREVIATION': 'Abbreviation'},
                   inplace=True)
-
+  
         # Perform t-test
         data = []
         columns = ['Passing Offense', 'Rushing Offense', 'Passing Defense',
@@ -475,8 +486,7 @@ class NFLPerformance(object):
                                            'OpponentMean'])
 
         # Transform teamstats dataframe for graphing
-        df = df.melt(id_vars=['Abbreviation', 'Opponent_Abbreviation',
-                              'GAME_ID', 'WEEK'])
+        df = df.melt(id_vars=['Abbreviation', 'GAME_ID'])
         df.rename(columns={'value': 'Yards Per Game', 'variable':'Category'},
                   inplace=True)
 
@@ -502,6 +512,10 @@ class NFLPerformance(object):
                 g.patches[i].set_edgecolor('#CCFF00')
                 g.patches[i].set_linewidth(3)
 
+        g.set_title('Team Stats')
+
+        g.figure.savefig('..\\DATFiles\\{}{}gamestat.png'.format(self.team,
+                                                                  year))
         return data
 
     def conversion_analysis(self,year):
@@ -604,6 +618,10 @@ class NFLPerformance(object):
                 g.patches[i].set_edgecolor('#CCFF00')
                 g.patches[i].set_linewidth(3)
 
+        g.set_title('Conersion Rate')
+
+        g.figure.savefig('..\\DATFiles\\{}{}conversion.png'.format(self.team,
+                                                                   year))
         return pd.DataFrame(data) 
 
     def return_analysis(self, year):
@@ -693,6 +711,11 @@ class NFLPerformance(object):
                 g.patches[i].set_edgecolor('#CCFF00')
                 g.patches[i].set_linewidth(3)
 
+        g.figure.savefig('..\\DATFiles\\{}{}return.png'.format(self.team,
+                                                               year))
+
+        g.set_title('Kick and Punt Returns and Coverage')
+
         return data
 
     def turnover_analysis(self, year):
@@ -780,6 +803,11 @@ class NFLPerformance(object):
                 g.patches[i].set_edgecolor('#CCFF00')
                 g.patches[i].set_linewidth(3)
 
+        g.set_title('Turnovers')
+
+        g.figure.savefig('..\\DATFiles\\{}{}turnover.png'.format(self.team,
+                                                                 year))
+
         return data
 
     def passer_rating(self, year, order=1):
@@ -862,6 +890,11 @@ class NFLPerformance(object):
             for ax in g.axes[:,0]:
                 ax.get_xaxis()\
                   .set_major_locator(MaxNLocator(integer=True))
+
+            g.fig.suptitle('Passer Rating by Attempts')
+
+            g.savefig('..\\DATFiles\\{}{}{}passer_rating.png'\
+                      .format(self.team, p, year))
 
         return df2
     
@@ -946,6 +979,11 @@ class NFLPerformance(object):
             sns.despine(left=True, bottom=True)
             g.xaxis.set_major_formatter(PercentFormatter(1))
 
+            g.set_title('Passer Percentile Scores')
+
+            g.figure.savefig('..\\DATFiles\\{}{}{}passer_score.png'\
+                             .format(self.team, p, year))
+
     def rusher_ypa(self, year, order=1):
         '''
         Performs analysis of qualified rushers yards per attempt in
@@ -1001,6 +1039,11 @@ class NFLPerformance(object):
             for ax in g.axes[:,0]:
                 ax.get_xaxis()\
                   .set_major_locator(MaxNLocator(integer=True))
+
+            g.fig.suptitle('Rusher YPA by Attempts')
+
+            g.savefig('..\\DATFiles\\{}{}{}rusher_ypa.png'\
+                      .format(self.team, p, year))
 
         return df2
         # return self.rater(df=df, filter_var='ATTEMPTS', qual_num=6.25,
@@ -1079,6 +1122,11 @@ class NFLPerformance(object):
             g.set(xticks=[.16,.5,.84,])
             sns.despine(left=True, bottom=True)
             g.xaxis.set_major_formatter(PercentFormatter(1))
+
+            g.set_title('Rusher Percentile Scores')
+
+            g.figure.savefig('..\\DATFiles\\{}{}{}rusher_score.png'\
+                             .format(self.team, p, year))
 
     def receiver_rating(self, year, order=1):
         '''
@@ -1166,6 +1214,11 @@ class NFLPerformance(object):
                 ax.get_xaxis()\
                   .set_major_locator(MaxNLocator(integer=True))
 
+            g.fig.suptitle('Passer Rating by Receiver Targets')
+
+            g.savefig('..\\DATFiles\\{}{}{}receiver_rating.png'\
+                      .format(self.team, p, year))
+
         return df2
 
         # return self.rater(df=df, filter_var='TARGETS', qual_num=1.875,
@@ -1251,6 +1304,11 @@ class NFLPerformance(object):
             sns.despine(left=True, bottom=True)
             g.xaxis.set_major_formatter(PercentFormatter(1))
 
+            g.set_title('Receiver Percentile Scores')
+
+            g.figure.savefig('..\\DATFiles\\{}{}{}receiver_score.png'\
+                             .format(self.team, p, year))
+
     def kicker_score(self, year):
         '''
         Performs analysis of kicker success rate against other kickers
@@ -1277,18 +1335,45 @@ class NFLPerformance(object):
         players = self.get_qualifiers(df=df, qual_num=.75,
                                       qual_var='ATTEMPTS', year=year)
 
+        # Rename non-players to a generic 'Rest of NFL'
+        df.loc[(~df['GSISPLAYER_ID'].isin(players)) | (df['ABBREVIATION'] == self.team), 'PLAYERNAME'] = 'Rest of NFL'
+
+        data = []
         # Iterate through the player list
         for p in players:
-            # Rename non-players to a generic 'Rest of NFL'
-            df.loc[(df['GSISPLAYER_ID'] != p)
-                    | (df['ABBREVIATION'] == self.team),
-                    'PLAYERNAME'] = 'Rest of NFL'
 
             # Change PLAYERNAME where multiple values exist for 
             # GSISPLAYER_ID
             df.loc[df['GSISPLAYER_ID'] == p, 'PLAYERNAME']\
                 = self.name_df.loc[p, 'PLAYERNAME']
 
+            # Find sums for Chi-2 test
+            for i in df['YARDS'].sort_values().unique().tolist():
+                made = df.loc[(df['ABBREVIATION'] == self.team) & (df['GSISPLAYER_ID'] == p) & (df['YARDS'] <= i), 'MADE'].sum()
+                missed = df.loc[(df['ABBREVIATION'] == self.team) & (df['GSISPLAYER_ID'] == p) & (df['YARDS'] <= i), 'MISSED'].sum()
+                nflmade = df.loc[((df['ABBREVIATION'] != self.team) | (df['GSISPLAYER_ID'] != p)) & (df['YARDS'] <= i), 'MADE'].sum()
+                nflmissed = df.loc[((df['ABBREVIATION'] != self.team) | (df['GSISPLAYER_ID'] != p)) & (df['YARDS'] <= i), 'MISSED'].sum()
+
+                # Create array of sums
+                comp = pd.np.array([[made, missed],
+                                    [nflmade, nflmissed]])
+
+                # Perform Chi-Sq Test of Independence
+                try:
+                    chi2, pval, dof, expected = stats.chi2_contingency(comp)
+                    data.append((df.loc[df['GSISPLAYER_ID'] == p,
+                                    'PLAYERNAME'].iloc[0], chi2, pval, i,
+                             df.loc[(df['ABBREVIATION'] == self.team)
+                                    & (df['GSISPLAYER_ID'] == p)
+                                    & (df['YARDS'] <= i), 'MADE'].mean(),
+                             df.loc[((df['ABBREVIATION'] != self.team)
+                                    | (df['GSISPLAYER_ID'] != p))
+                                    & (df['YARDS'] <= i), 'MADE'].mean()))
+        
+                except ValueError:
+                    pass
+
+            
             # Rename columns for pretty graphing
             df.rename(columns={'ABBREVIATION': 'Team','MADE': 'Accuracy',
                                'YARDS':'Distance', 'PLAYERNAME':'Name'},
@@ -1302,9 +1387,19 @@ class NFLPerformance(object):
                            palette=palette, hue_order=hue_order, 
                            legend_out=False, scatter=False, logistic=True)
 
-        # Format the y-axis to show percentage
-        for ax in g.axes[:,0]:
-            ax.yaxis.set_major_formatter(PercentFormatter(1))
+            # Format the y-axis to show percentage
+            for ax in g.axes[:,0]:
+                ax.yaxis.set_major_formatter(PercentFormatter(1))
+
+            g.fig.suptitle('Kicker Accuracy by Range')
+
+            g.savefig('..\\DATFiles\\{}{}{}kicker_score.png'\
+                      .format(self.team, p, year))
+
+        cols = ['Name', 'Chi2', 'PValue', 'Distance', 'PlayerAcc', 'NFLAcc']
+        df2 = pd.DataFrame(data, columns=cols)
+        df2 = df2[df2['PValue'] <= .05]
+        return df2
 
     def punter_score(self, year, order):
         '''
@@ -1332,7 +1427,7 @@ class NFLPerformance(object):
         df['NetYards'] = df['PUNTYARDS'] - df['RETURNYARDS']
 
         # Find qualifying number of attempts
-        min_att = self.gamecount(year) * .75
+        min_att = self.gamecount(year) * 1
 
         # Calculate total number of attempts for each player
         tot_att = df.groupby('GSISPLAYER_ID')\
@@ -1347,9 +1442,21 @@ class NFLPerformance(object):
         players = df.loc[(df['ABBREVIATION'] == self.team)
                          & (df['GSISPLAYER_ID'].isin(players)), 'GSISPLAYER_ID']\
                     .unique()
-
+        
+        data = []
         # Iterate through the player list
         for p in players:
+            for i in df['DISTANCE'].sort_values().unique().tolist():
+                rvs1 = df.loc[(df['DISTANCE'] <= i)
+                              & (df['GSISPLAYER_ID'] == p), 'NetYards']
+                rvs2 = df.loc[(df['DISTANCE'] <= i)
+                              & (df['GSISPLAYER_ID'] != p), 'NetYards']
+                stat, pvalue = stats.ttest_ind(rvs1, rvs2, equal_var=False)
+
+                # Append t-test results to data list
+                data.append((df.loc[df['GSISPLAYER_ID'] == p, 'PLAYERNAME']\
+                               .iloc[0],
+                             i, stat, pvalue, rvs1.mean(), rvs2.mean()))
 
             # Rename non-players to a generic 'Rest of NFL'
             df.loc[(df['GSISPLAYER_ID'] != p)
@@ -1378,3 +1485,15 @@ class NFLPerformance(object):
             for ax in g.axes[:, 0]:
                 ax.get_xaxis()\
                   .set_major_locator(MaxNLocator(integer=True))
+
+            g.fig.suptitle('Net Punting by Distance from Goal')
+
+            g.savefig('..\\DATFiles\\{}{}{}punter_score.png'\
+                      .format(self.team, p, year))
+
+        columns=['Name', 'Distance from Goal', 'Statistic', 'P-Value', 'PlayerMean',
+                     'NFLMean']
+        df2 = pd.DataFrame(data, columns=columns)
+        df2 = df2[df2['P-Value'] <= .05]
+
+        return df2
