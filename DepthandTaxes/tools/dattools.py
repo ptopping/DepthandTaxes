@@ -8,8 +8,10 @@ import seaborn as sns
 from scipy import stats
 import statsmodels.api as sm
 
-dat_pal = ['#29506D','#AA3939','#2D882D','#AA7939','#718EA4','#FFAAAA','#88CC88','#FFDBAA','#042037','#550000','#004400','#553100',
-'#496D89','#D46A6A','#55AA55','#D4A76A','#123652','#801515','#116611','#805215']
+dat_pal = ['#29506D', '#AA3939', '#2D882D', '#AA7939', '#718EA4', '#FFAAAA',
+		   '#88CC88', '#FFDBAA', '#042037', '#550000', '#004400', '#553100',
+		   '#496D89', '#D46A6A', '#55AA55', '#D4A76A', '#123652', '#801515',
+		   '#116611', '#805215']
 light_seq_dat_pal = sns.light_palette('#29506D')
 sns.set_style('whitegrid')
 sns.set_palette(dat_pal)
