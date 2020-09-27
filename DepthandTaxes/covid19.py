@@ -3,6 +3,7 @@ import glob
 import os
 import pandas as pd
 import re
+import numpy as np
 from scipy.optimize import curve_fit
 # import datetime
 import seaborn as sns
@@ -18,7 +19,102 @@ dat_pal = ['#29506D', '#AA3939', '#2D882D', '#AA7939', '#718EA4', '#FFAAAA',
            '#496D89', '#D46A6A', '#55AA55', '#D4A76A', '#123652', '#801515',
            '#116611', '#805215']
 
-class CovidReport_Global(object):
+class CovidTimeSeries(object):
+    """docstring for CovidTimeSeries"""
+    def __init__(self):
+        path = ('..\\COVID-19\\csse_covid_19_data\\UID_ISO_FIPS_LookUp'
+                '_Table.csv')
+        self.FIPS_df = pd.read_csv(path)
+
+        columns = {'variable':'Date', 'value':'Confirmed'}
+        path = ('..\\COVID-19\\csse_covid_19_data\\csse_covid_19_time_series'
+                '\\time_series_covid19_confirmed_global.csv')
+        self.confirmed_global = pd.read_csv(path)
+        id_vars = ['Province/State', 'Country/Region', 'Lat', 'Long']
+        self.confirmed_global = self.confirmed_global.melt(id_vars=id_vars)\
+                                                     .rename(columns=columns)
+        cols = ['Province_State', 'Country_Region', 'Population',
+                'Combined_Key']
+        lcols = ['Province/State', 'Country/Region']
+        rcols = ['Province_State', 'Country_Region']
+        self.confirmed_global = self.confirmed_global\
+                                    .merge(self.FIPS_df[cols], how='left',
+                                        left_on=lcols, right_on = rcols)
+        self.confirmed_global.drop(columns=rcols, inplace=True)
+        self.confirmed_global.loc[:, 'Date']\
+            = self.confirmed_global.loc[:, 'Date'].apply(pd.to_datetime)
+
+
+        path = ('..\\COVID-19\\csse_covid_19_data\\csse_covid_19_time_series'
+                '\\time_series_covid19_confirmed_US.csv')
+        self.confirmed_us = pd.read_csv(path)
+        id_vars = ['Combined_Key', 'UID', 'iso2', 'iso3', 'code3', 'FIPS',
+                   'Admin2', 'Province_State', 'Country_Region', 'Lat',
+                   'Long_']
+        self.confirmed_us = self.confirmed_us.melt(id_vars=id_vars)\
+                                             .rename(columns=columns)
+        cols = ['Combined_Key', 'Population']
+        lcols = ['Combined_Key']
+        rcols = ['Combined_Key']        
+        self.confirmed_us = self.confirmed_us.merge(self.FIPS_df[cols],
+                                                    how='left', left_on=lcols,
+                                                    right_on = rcols)
+        self.confirmed_us.loc[:, 'Date']\
+            = self.confirmed_us.loc[:, 'Date'].apply(pd.to_datetime)
+        
+        columns = {'variable':'Date', 'value':'Deaths'}
+        path = ('..\\COVID-19\\csse_covid_19_data\\csse_covid_19_time_series'
+                '\\time_series_covid19_deaths_global.csv')
+        self.deaths_global = pd.read_csv(path)
+        id_vars = ['Province/State', 'Country/Region', 'Lat', 'Long']
+        self.deaths_global = self.deaths_global.melt(id_vars=id_vars)\
+                                               .rename(columns=columns)
+        cols = ['Province_State', 'Country_Region', 'Population',
+                'Combined_Key']
+        lcols = ['Province/State', 'Country/Region']
+        rcols = ['Province_State', 'Country_Region']
+        self.deaths_global = self.deaths_global.merge(self.FIPS_df[cols],
+                                                      how='left',
+                                                      left_on=lcols,
+                                                      right_on = rcols)
+        self.deaths_global.drop(columns=rcols, inplace=True)
+        self.deaths_global.loc[:, 'Date']\
+            = self.deaths_global.loc[:, 'Date'].apply(pd.to_datetime)
+
+
+        path = ('..\\COVID-19\\csse_covid_19_data\\csse_covid_19_time_series'
+                '\\time_series_covid19_deaths_US.csv')
+        self.deaths_us = pd.read_csv(path)
+        self.deaths_us = pd.read_csv(path)
+        id_vars = ['Combined_Key', 'Population', 'UID', 'iso2', 'iso3',
+                   'code3', 'FIPS', 'Admin2', 'Province_State',
+                   'Country_Region', 'Lat', 'Long_']
+        self.deaths_us = self.deaths_us.melt(id_vars=id_vars)\
+                                       .rename(columns=columns)
+        self.deaths_us.loc[:, 'Date']\
+            = self.deaths_us.loc[:, 'Date'].apply(pd.to_datetime)
+        
+
+        columns = {'variable':'Date', 'value':'Recovered'}
+        path = ('..\\COVID-19\\csse_covid_19_data\\csse_covid_19_time_series'
+                '\\time_series_covid19_recovered_global.csv')
+        id_vars = ['Province/State', 'Country/Region', 'Lat', 'Long']        
+        self.recovered_global = pd.read_csv(path)
+        self.recovered_global = self.recovered_global.melt(id_vars=id_vars)\
+                                                     .rename(columns=columns)
+        cols = ['Province_State', 'Country_Region', 'Population',
+                'Combined_Key']
+        lcols = ['Province/State', 'Country/Region']
+        rcols = ['Province_State', 'Country_Region']
+        self.recovered_global = self.recovered_global\
+                                    .merge(self.FIPS_df[cols], how='left',
+                                           left_on=lcols, right_on = rcols)
+        self.recovered_global.drop(columns=rcols, inplace=True)
+        self.recovered_global.loc[:, 'Date']\
+            = self.recovered_global.loc[:, 'Date'].apply(pd.to_datetime)
+       
+
+class CovidReportGlobal(object):
     '''
     Aggregates Daily Reports and Creates DataFrame with all COVID-19 Data
     
@@ -33,7 +129,6 @@ class CovidReport_Global(object):
                 '_Table.csv')
         self.FIPS_df = pd.read_csv(path)
         self.daily_reports = self.compile()
-
 
     def compile(self):
         # Create Blank dataframe to add reports to
@@ -50,72 +145,129 @@ class CovidReport_Global(object):
             data.loc[:, 'Date'] = pd.to_datetime(f)
             df = df.append(data, sort=True)        
 
-        # Data Cleansing
-        df['Last Update'].fillna(df['Last_Update'], inplace=True)
-        df['Latitude'].fillna(df['Lat'], inplace=True)
-        df['Longitude'].fillna(df['Long_'], inplace=True)
-        df['Province/State'].fillna(df['Province_State'],
-                                         inplace=True)
-        df['Country/Region'].fillna(df['Country_Region'],
-                                         inplace=True)
+        df = df.reset_index(drop=True)
 
-        plist = df.loc[(df['Combined_Key'].isnull()) & (df['Province/State'].notnull()), 'Province/State'].unique()
-        plist = [p for p in plist if len(self.FIPS_df[self.FIPS_df['Combined_Key'].str.contains(p)]) == 1]
+        '''
+        Iterative approach to find join key for Daily Report and Location data
+        Search for keys at the province level first before moving on to the Country level
+        '''
 
+        plist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .notnull()), 'Province/State']\
+                        .unique()\
+                        .tolist()
+
+        pdict = {}
         for p in plist:
-            df.loc[(df['Province/State'] == p) & (df['Combined_Key'].isnull()), 'FIPS'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(p),
-                             'FIPS'].iat[0]
-            df.loc[(df['Province/State'] == p) & (df['Combined_Key'].isnull()), 'Admin2'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(p),
-                             'Admin2'].iat[0]
-            df.loc[(df['Province/State'] == p) & (df['Combined_Key'].isnull()), 'Country/Region'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(p),
-                             'Country_Region'].iat[0]
-            df.loc[(df['Province/State'] == p) & (df['Combined_Key'].isnull()), 'Latitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(p),
-                             'Lat'].iat[0]
-            df.loc[(df['Province/State'] == p) & (df['Combined_Key'].isnull()), 'Longitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(p),
-                             'Long_'].iat[0]
-            df.loc[(df['Province/State'] == p) & (df['Combined_Key'].isnull()), 'Combined_Key'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(p),
-                             'Combined_Key'].iat[0]
-            df.loc[(df['Province/State'] == p) & (df['Combined_Key'].isnull()), 'Province/State'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(p),
-                             'Province_State'].iat[0]
+            if len(self.FIPS_df[self.FIPS_df['Combined_Key'].str\
+                                .contains(p)]) == 1:
+                pdict[p] = self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str\
+                                            .contains(p), 'Combined_Key']\
+                                       .iat[0]
+            else:
+                pass
 
-        clist = df.loc[(df['Combined_Key'].isnull()) & (df['Country/Region'].notnull()), 'Country/Region'].unique()
-        clist = [c for c in clist if len(self.FIPS_df[self.FIPS_df['Combined_Key'].str.contains(c)]) == 1]
+        ndx = df\
+                  .index[(df['Combined_Key'].isnull())\
+                         & (df['Country/Region'].notnull())\
+                         & (df['Province/State'].isin(pdict))]\
+                  .tolist()
 
-        for c in clist:
-            df.loc[(df['Country/Region'] == c) & (df['Combined_Key'].isnull()), 'FIPS'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(c),
-                             'FIPS'].iat[0]
-            df.loc[(df['Country/Region'] == c) & (df['Combined_Key'].isnull()), 'Admin2'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(c),
-                             'Admin2'].iat[0]
-            df.loc[(df['Country/Region'] == c) & (df['Combined_Key'].isnull()), 'Province/State'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(c),
-                             'Province_State'].iat[0]
-            df.loc[(df['Country/Region'] == c) & (df['Combined_Key'].isnull()), 'Latitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(c),
-                             'Lat'].iat[0]
-            df.loc[(df['Country/Region'] == c) & (df['Combined_Key'].isnull()), 'Longitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(c),
-                             'Long_'].iat[0]
-            df.loc[(df['Country/Region'] == c) & (df['Combined_Key'].isnull()), 'Combined_Key'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(c),
-                             'Combined_Key'].iat[0]
-            df.loc[(df['Country/Region'] == c) & (df['Combined_Key'].isnull()), 'Country/Region'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str.contains(c),
-                             'Country_Region'].iat[0]
+        df.loc[ndx, 'Combined_Key']\
+            = df.loc[ndx, 'Province/State'].map(pdict)
+
+        self.iter1 = pdict
+
+        df.loc[:, 'P/SC/R']\
+            = df.loc[:, 'Province/State']\
+                + ', '\
+                + df.loc[:, 'Country/Region']
         
-        pdict = {'Washington':'Washington, US', 
-                 'Chicago':'Cook, Illinois, US', 'Illinois':'Illinois, US',
-                 'California':'California, US', 'Arizona':'Arizona, US',
-                 'Ontario':'Ontario, Canada',
-                 'Victoria':'Victoria, Australia',
+        plist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .notnull()), 'P/SC/R']\
+                        .unique()\
+                        .tolist()
+
+        pdict = {}
+        for p in plist:
+            if p in self.FIPS_df['Combined_Key'].tolist():
+                pdict[p] = self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == p,
+                                            'Combined_Key']\
+                                       .iat[0]
+            else:
+                pass
+
+        ndx = df\
+                  .index[(df['Combined_Key'].isnull())\
+                         & (df['Country/Region'].notnull())\
+                         & (df['Province/State'].notnull())\
+                         & (df['P/SC/R'].isin(pdict))]\
+                  .tolist()
+
+        df.loc[ndx, 'Combined_Key']\
+            = df.loc[ndx, 'P/SC/R'].map(pdict)
+
+        self.iter2 = pdict
+
+        df = df\
+                                 .join(df['Province/State']\
+                                           .str\
+                                           .split(' County,', expand=True)\
+                                           .add_prefix('key'))
+
+        plist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                    .notnull())
+                             & (df['Province/State']\
+                                    .notnull())
+                             & (df['key1']\
+                                    .notnull()), 'key0']\
+                        .unique()\
+                        .tolist()
+        
+        pdict = {}
+        for p in plist:
+            if len(self.FIPS_df[self.FIPS_df['Combined_Key'].str\
+                                .contains(p)]) == 1:
+                pdict[p] = self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str\
+                                            .contains(p), 'Combined_Key']\
+                                       .iat[0]
+            else:
+                pass
+
+        ndx = df\
+                  .index[(df['Combined_Key'].isnull())\
+                         & (df['Country/Region'].notnull())\
+                         & (df['Province/State'].notnull())\
+                         & (df['key0'].isin(pdict))]\
+                  .tolist()
+
+        df.loc[ndx, 'Combined_Key']\
+            = df.loc[ndx, 'key0'].map(pdict)
+
+        self.iter3 = pdict
+
+        plist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .notnull()), 'Province/State']\
+                        .unique()\
+                        .tolist()
+
+        self.iter4 = plist
+
+        pdict = {'Chicago':'Cook, Illinois, US', 'Bavaria':'Bayern, Germany',
                  'Chicago, IL':'Cook, Illinois, US',
                  'Boston, MA':'Suffolk, Massachusetts, US',
                  'Los Angeles, CA':'Los Angeles, California, US',
@@ -129,58 +281,41 @@ class CovidReport_Global(object):
                  'Madison, WI':'Dane, Wisconsin, US',
                  # 'Cruise Ship',
                  'Diamond Princess cruise ship':'Diamond Princess',
-                 'San Diego County, CA':'San Diego, California, US',
                  'San Antonio, TX':'Bexar, Texas, US',
                  'Ashland, NE':'Saunders, Nebraska, US',
                  'Travis, CA':'Solano, California, US',
                  'From Diamond Princess':'Diamond Princess',
-                 'Lackland, TX':'Bexar, Texas, US', 'None':'Lebanon',
+                 'Lackland, TX':'Bexar, Texas, US',
+                 # 'None',
                  'Humboldt County, CA':'Humboldt, California, US',
-                 'Sacramento County, CA':'Sacramento, California, US',
-                 'Omaha, NE (From Diamond Princess)':'Diamond Princess',
-                 'Travis, CA (From Diamond Princess)':'Diamond Princess',
-                 'Lackland, TX (From Diamond Princess)':'Diamond Princess',
+                 'Omaha, NE (From Diamond Princess)':'Diamond Princess, US',
+                 'Travis, CA (From Diamond Princess)':'Diamond Princess, US',
+                 'Lackland, TX (From Diamond Princess)':'Diamond Princess, US',
                  'Unassigned Location (From Diamond Princess)':'Diamond Princess',
                  ' Montreal, QC':'Quebec, Canada',
-                 'Portland, OR':'Multnomah, Oregon, US', 
-                 'Snohomish County, WA':'Snohomish, Washington, US',
+                 'Portland, OR':'Multnomah, Oregon, US',
                  'Providence, RI':'Providence, Rhode Island, US',
                  'King County, WA':'King, Washington, US',
                  'Cook County, IL':'Cook, Illinois, US',
-                 'Grafton County, NH':'Grafton, New Hampshire, US',
                  'Hillsborough, FL':'Hillsborough, Florida, US',
                  'New York City, NY':'New York City, New York, US',
-                 'Placer County, CA':'Placer, California, US',
                  'San Mateo, CA':'San Mateo, California, US',
                  'Sarasota, FL':'Sarasota, Florida, US',
-                 'Sonoma County, CA':'Sonoma, California, US',
                  'Umatilla, OR':'Umatilla, Oregon, US',
                  'Fulton County, GA':'Fulton, Georgia, US',
                  'Washington County, OR':'Washington, Oregon, US',
                  ' Norfolk County, MA':'Norfolk, Massachusetts, US',
                  'Berkeley, CA':'Alameda, California, US',
-                 'Maricopa County, AZ':'Maricopa, Arizona, US',
-                 'Wake County, NC':'Wake, North Carolina, US',
-                 'Westchester County, NY':'Westchester, New York, US',
-                 'Saint Barthelemy':'Saint Barthelemy, France',
                  'Orange County, CA':'Orange, California, US',
-                 'Faroe Islands':'Faroe Islands, Denmark',
-                 'Gibraltar':'Gibraltar, United Kingdom',
-                 'Contra Costa County, CA':'Contra Costa, California, US',
-                 'Bergen County, NJ':'Bergen, New Jersey, US',
                  'Harris County, TX':'Harris, Texas, US',
-                 'San Francisco County, CA':'San Francisco, California, US',
                  'Clark County, NV':'Clark, Nevada, US',
-                 'Fort Bend County, TX':'Fort Bend, Texas, US',
                  'Grant County, WA':'Grant, Washington, US',
                  'Queens County, NY':'Queens, New York, US',
-                 'Santa Rosa County, FL':'Santa Rosa, Florida, US',
                  'Williamson County, TN':'Williamson, Tennessee, US',
                  'New York County, NY':'New York City, New York, US',
                  'Unassigned Location, WA':'Unassigned, Washington, US',
                  'Montgomery County, MD':'Montgomery, Maryland, US',
                  'Suffolk County, MA':'Suffolk, Massachusetts, US',
-                 'Denver County, CO':'Denver, Colorado, US',
                  'Summit County, CO':'Summit, Colorado, US',
                  'Calgary, Alberta':'Alberta, Canada',
                  'Chatham County, NC':'Chatham, North Carolina, US',
@@ -193,306 +328,453 @@ class CovidReport_Global(object):
                  'Nassau County, NY':'Nassau, New York, US',
                  'Norwell County, MA':'Plymouth, Massachusetts, US',
                  'Ramsey County, MN':'Ramsey, Minnesota, US',
-                 'Washoe County, NV':'Washoe, Nevada, US',
                  'Wayne County, PA':'Wayne, Pennsylvania, US',
-                 'Yolo County, CA':'Yolo, California, US',
-                 'Santa Clara County, CA':'Santa Clara, California, US',
-                 'Grand Princess Cruise Ship':'Grand Princess, US',
-                 'French Guiana':'French Guiana, France',
+                 # 'Grand Princess Cruise Ship',
                  'Douglas County, CO':'Douglas, Colorado, US',
-                 'Providence County, RI':'Providence, Rhode Island, US',
-                 'Martinique':'Martinique, France',
-                 'Alameda County, CA':'Alameda, California, US',
-                 'Broward County, FL':'Broward, Florida, US',
                  'Fairfield County, CT':'Fairfield, Connecticut, US',
                  'Lee County, FL':'Lee, Florida, US',
-                 'Pinal County, AZ':'Pinal, Arizona, US',
-                 'Rockland County, NY':'Rockland, New York, US',
-                 'Saratoga County, NY':'Saratoga, New York, US',
                  'Edmonton, Alberta':'Alberta, Canada',
-                 'Charleston County, SC':'Charleston, South Carolina, US',
                  'Clark County, WA':'Clark, Washington, US',
-                 'Cobb County, GA':'Cobb, Georgia, US',
                  'Davis County, UT':'Davis, Utah, US',
                  'El Paso County, CO':'El Paso, Colorado, US',
-                 'Honolulu County, HI':'Honolulu, Hawaii, US',
                  'Jackson County, OR ':'Jackson, Oregon, US',
                  'Jefferson County, WA':'Jefferson, Washington, US',
-                 'Kershaw County, SC':'Kershaw, South Carolina, US',
-                 'Klamath County, OR':'Klamath, Oregon, US',
-                 'Madera County, CA':'Madera, California, US',
                  'Pierce County, WA':'Pierce, Washington, US',
                  'Plymouth County, MA':'Plymouth, Massachusetts, US',
                  'Santa Cruz County, CA':'Santa Cruz, California, US',
-                 'Tulsa County, OK':'Tulsa, Oklahoma, US',
                  'Montgomery County, TX':'Montgomery, Texas, US',
-                 'Norfolk County, MA':'Norfolk, Massachusetts, US',
+                 'Norfolk County, MA':'Norfolk, Virginia, US',
                  'Montgomery County, PA':'Montgomery, Pennsylvania, US',
                  'Fairfax County, VA':'Fairfax, Virginia, US',
                  'Rockingham County, NH':'Rockingham, New Hampshire, US',
-                 'Washington, D.C.':'District of Columbia, US',
-                 'Berkshire County, MA':'Berkshire, Massachusetts, US',
+                 'Washington, D.C.':'District of Columbia, District of Columbia ,US',
                  'Davidson County, TN':'Davidson, Tennessee, US',
                  'Douglas County, OR':'Douglas, Oregon, US',
-                 'Fresno County, CA':'Fresno, California, US',
-                 'Harford County, MD':'Harford, Maryland, US',
-                 'Hendricks County, IN':'Hendricks, Indiana, US',
-                 'Hudson County, NJ':'Hudson, New Jersey, US',
                  'Johnson County, KS':'Johnson, Kansas, US',
-                 'Kittitas County, WA':'Kittitas, Washington, US',
-                 'Manatee County, FL':'Manatee, Florida, US',
                  'Marion County, OR':'Marion, Oregon, US',
-                 'Okaloosa County, FL':'Okaloosa, Florida, US',
                  'Polk County, GA':'Polk, Georgia, US',
-                 'Riverside County, CA':'Riverside, California, US',
                  'Shelby County, TN':'Shelby, Tennessee, US',
-                 'Spokane County, WA':'Spokane, Washington, US',
                  'St. Louis County, MO':'St. Louis, Missouri, US',
                  'Suffolk County, NY':'Suffolk, New York, US',
-                 'Ulster County, NY':'Ulster, New York, US',
                  'Unassigned Location, VT':'Unassigned, Vermont, US',
                  'Unknown Location, MA':'Unassigned, Massachusetts, US',
-                 'Volusia County, FL':'Volusia, Florida, US',
                  'Johnson County, IA':'Johnson, Iowa, US',
                  'Harrison County, KY':'Harrison, Kentucky, US',
-                 'Bennington County, VT':'Bennington, Vermont, US',
-                 'Carver County, MN':'Carver, Minnesota, US',
                  'Charlotte County, FL':'Charlotte, Florida, US',
                  'Cherokee County, GA':'Cherokee, Georgia, US',
                  'Collin County, TX':'Collin, Texas, US',
                  'Jefferson County, KY':'Jefferson, Kentucky, US',
                  'Jefferson Parish, LA':'Jefferson, Louisiana, US',
-                 'Shasta County, CA':'Shasta, California, US',
-                 'Spartanburg County, SC':'Spartanburg, South Carolina, US',
-                 'New York':'New York, US',
-                 'Massachusetts':'Massachusetts, US', 'Taiwan':'Taiwan*',
-                 'Diamond Princess':'Diamond Princess',
-                 'Grand Princess':'Grand Princess, US',
-                 'Georgia':'Georgia, US', 'Colorado':'Colorado, US',
-                 'Florida':'Florida, US', 'New Jersey':'New Jersey, US',
-                 'Oregon':'Oregon, US', 'Texas':'Texas, US',
-                 'Pennsylvania':'Pennsylvania, US', 'Iowa':'Iowa, US',
-                 'Maryland':'Maryland, US',
-                 'North Carolina':'North Carolina, US',
-                 'South Carolina':'South Carolina, US',
-                 'Tennessee':'Tennessee, US', 'Virginia':'Virginia, US',
-                 'Indiana':'Indiana, US', 'Kentucky':'Kentucky, US',
-                 'District of Columbia':'District of Columbia, US',
-                 'Nevada':'Nevada, US',
-                 'New Hampshire':'New Hampshire, US',
-                 'Minnesota':'Minnesota, US', 'Nebraska':'Nebraska, US',
-                 'Ohio':'Ohio, US', 'Rhode Island':'Rhode Island, US',
-                 'Wisconsin':'Wisconsin, US', 'Connecticut':'Connecticut, US',
-                 'Hawaii':'Hawaii, US', 'Oklahoma':'Oklahoma, US',
-                 'Utah':'Utah, US',
-                 'Channel Islands':'Channel Islands, United Kingdom',
-                 'Kansas':'Kansas, US', 'Louisiana':'Louisiana, US',
-                 'Missouri':'Missouri, US', 'Vermont':'Vermont, US',
-                 'Alaska':'Alaska, US', 'Arkansas':'Arkansas, US',
-                 'Delaware':'Delaware, US', 'Idaho':'Idaho, US',
-                 'Maine':'Maine, US', 'Michigan':'Michigan, US',
-                 'Mississippi':'Mississippi, US', 'Montana':'Montana, US',
-                 'New Mexico':'New Mexico, US',
-                 'North Dakota':'North Dakota, US',
-                 'South Dakota':'South Dakota, US',
-                 'West Virginia':'West Virginia, US', 'Wyoming':'Wyoming, US',
-                 'France':'France', 'UK':'United Kingdom',
-                 'Denmark':'Denmark', 'Reunion':'Reunion, France',
+                 'France':'France', 'Diamond Princess':'Diamond Princess',
+                 'UK':'United Kingdom', 'Denmark':'Denmark',
                  'United Kingdom':'United Kingdom',
-                 'Cayman Islands':'Cayman Islands, United Kingdom',
-                 'Guadeloupe':'Guadeloupe, France',
-                 'Aruba':'Aruba, Netherlands', 'Alabama':'Alabama, US',
                  'Fench Guiana':'French Guiana, France',
-                 'Curacao':'Curacao, Netherlands',
                  'Virgin Islands, U.S.':'Virgin Islands, US',
-                 'Netherlands':'Netherlands', 'Guam':'Guam, US',
-                 'Puerto Rico':'Puerto Rico, US',
-                 'Greenland':'Greenland, Denmark',
-                 'Mayotte':'Mayotte, France',
-                 'Virgin Islands':'Virgin Islands, US',
+                 'Netherlands':'Netherlands',
                  'United States Virgin Islands':'Virgin Islands, US',
                  'US':'US'}
-        
-        for k,v in pdict.items():
-            df.loc[(df['Province/State'] == k) & (df['Combined_Key'].isnull()), 'FIPS'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'FIPS'].iat[0]
-            df.loc[(df['Province/State'] == k) & (df['Combined_Key'].isnull()), 'Admin2'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Admin2'].iat[0]
-            df.loc[(df['Province/State'] == k) & (df['Combined_Key'].isnull()), 'Country/Region'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Country_Region'].iat[0]
-            df.loc[(df['Province/State'] == k) & (df['Combined_Key'].isnull()), 'Latitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Lat'].iat[0]
-            df.loc[(df['Province/State'] == k) & (df['Combined_Key'].isnull()), 'Longitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Long_'].iat[0]
-            df.loc[(df['Province/State'] == k) & (df['Combined_Key'].isnull()), 'Combined_Key'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Combined_Key'].iat[0]
-            df.loc[(df['Province/State'] == k) & (df['Combined_Key'].isnull()), 'Province/State'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Province_State'].iat[0]
 
-        cdict = {'South Korea':'Korea, South', 'Australia':'Australia',
-                 'Mexico':'Mexico', 'France':'France',
-                 'Ivory Coast':"Cote d'Ivoire", 'India':'India',
-                 'UK':'United Kingdom',
-                 # 'Others',
-                 'Lebanon':'Lebanon', 'Switzerland':'Switzerland',
-                 'Georgia':'Georgia', 'Denmark':'Denmark',
-                 'Netherlands':'Netherlands', ' Azerbaijan':'Azerbaijan',
+        ndx = df\
+                  .index[(df['Combined_Key'].isnull())\
+                         & (df['Country/Region'].notnull())\
+                         & (df['Province/State'].isin(pdict))]\
+                  .tolist()
+
+        df.loc[ndx, 'Combined_Key']\
+            = df.loc[ndx, 'Province/State'].map(pdict)
+
+        plist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .notnull()), 'Province/State']\
+                        .unique()\
+                        .tolist()
+
+        self.iter5 = plist
+
+        clist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .isnull()), 'Country/Region']\
+                        .unique()\
+                        .tolist()
+
+        self.iter6 = clist
+
+        cdict = {}
+        for c in clist:
+            if len(self.FIPS_df[self.FIPS_df['Combined_Key'].str\
+                                .contains(c)]) == 1:
+                cdict[c] = self.FIPS_df.loc[self.FIPS_df['Combined_Key'].str\
+                                            .contains(c), 'Combined_Key']\
+                                       .iat[0]
+            else:
+                pass
+
+        ndx = df\
+                  .index[(df['Combined_Key'].isnull())\
+                         & (df['Country/Region'].isin(cdict))\
+                         & (df['Province/State'].isnull())]\
+                  .tolist()
+
+        df.loc[ndx, 'Combined_Key']\
+            = df.loc[ndx, 'Country/Region'].map(cdict)
+
+        clist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .isnull()), 'Country/Region']\
+                        .unique()\
+                        .tolist()
+
+        self.iter7 = clist
+
+        cdict = {}
+        for c in clist:
+            if c in self.FIPS_df['Combined_Key'].tolist():
+                cdict[c] = self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == c,
+                                            'Combined_Key']\
+                               .iat[0]
+            else:
+                pass
+
+        ndx = df\
+                  .index[(df['Combined_Key'].isnull())\
+                         & (df['Country/Region'].isin(cdict))\
+                         & (df['Province/State'].isnull())]\
+                  .tolist()
+
+        df.loc[ndx, 'Combined_Key']\
+            = df.loc[ndx, 'Country/Region'].map(cdict)
+
+        clist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .isnull()), 'Country/Region']\
+                        .unique()\
+                        .tolist()
+
+        self.iter8 = clist
+
+        cdict = {'South Korea':'Korea, South', 'Ivory Coast':"Cote d'Ivoire",
+                 'UK':'United Kingdom', ' Azerbaijan':'Azerbaijan', 
                  'North Ireland':'United Kingdom', 'Czech Republic':'Czechia',
                  'Palestine':'West Bank and Gaza', 'Vatican City':'Holy See',
                  'Republic of Ireland':'Ireland',
-                 'Iran (Islamic Republic of)':'Iran',
+                 'Iran (Islamic Republic of)':'Iran', 
                  'Republic of Korea':'Korea, South', 'Viet Nam':'Vietnam',
                  'occupied Palestinian territory':'West Bank and Gaza',
                  'Russian Federation':'Russia',
                  'Republic of Moldova':'Moldova',
-                 'Saint Martin':'St Martin, France', 'Mongolia':'Mongolia',
-                 'Congo (Kinshasa)':'Congo (Kinshasa)', 'Sudan':'Sudan',
-                 'Guinea':'Guinea', 'Jersey':'United Kingdom',
-                 'Congo (Brazzaville)':'Congo (Brazzaville)',
+                 'Saint Martin':'St Martin, France',
+                 'Jersey':'Channel Islands, United Kingdom',
                  'Republic of the Congo':'Congo (Brazzaville)',
                  'The Bahamas':'Bahamas', 'The Gambia':'Gambia',
                  'Gambia, The':'Gambia', 'Bahamas, The':'Bahamas',
-                 'Niger':'Niger', 'Cape Verde':'Cabo Verde',
-                 'East Timor':'Timor-Leste'}
+                 'Cape Verde':'Cabo Verde', 'East Timor':'Timor-Leste'}
 
-        for k,v in cdict.items():
-            df.loc[(df['Country/Region'] == k) & (df['Combined_Key'].isnull()), 'FIPS'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'FIPS'].iat[0]
-            df.loc[(df['Country/Region'] == k) & (df['Combined_Key'].isnull()), 'Admin2'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Admin2'].iat[0]
-            df.loc[(df['Country/Region'] == k) & (df['Combined_Key'].isnull()), 'Latitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Lat'].iat[0]
-            df.loc[(df['Country/Region'] == k) & (df['Combined_Key'].isnull()), 'Longitude'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Long_'].iat[0]
-            df.loc[(df['Country/Region'] == k) & (df['Combined_Key'].isnull()), 'Combined_Key'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Combined_Key'].iat[0]
-            df.loc[(df['Country/Region'] == k) & (df['Combined_Key'].isnull()), 'Province/State'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Province_State'].iat[0]
-            df.loc[(df['Country/Region'] == k) & (df['Combined_Key'].isnull()), 'Country/Region'] =\
-                self.FIPS_df.loc[self.FIPS_df['Combined_Key'] == v,
-                             'Country_Region'].iat[0]
+        ndx = df\
+                  .index[(df['Combined_Key'].isnull())\
+                         & (df['Country/Region'].isin(cdict))\
+                         & (df['Province/State'].isnull())]\
+                  .tolist()
 
-        # Enfore datetime column is datetime
-        df['Last Update'] = df['Last Update'].apply(pd.to_datetime)
+        df.loc[ndx, 'Combined_Key']\
+            = df.loc[ndx, 'Country/Region'].map(cdict)
 
-        # Drop Duplicates and reset index
-        df.drop_duplicates(inplace=True)
-        df.reset_index(drop=True, inplace=True)
+        clist = df\
+                        .loc[(df['Combined_Key'].isnull())\
+                             & (df['Country/Region']\
+                                .notnull())
+                             & (df['Province/State']\
+                                .isnull()), 'Country/Region']\
+                        .unique()\
+                        .tolist()
+        
+        self.iter9 = clist
 
-        # Trim DataFrame to necessary columns
-        # df_cols = ['Active', 'Admin2', 'Combined_Key', 'Confirmed',
-        #            'Country/Region', 'Date', 'Deaths', 'FIPS', 'Last Update',
-        #            'Latitude', 'Longitude', 'Province/State', 'Recovered']
+        cols = ['Combined_Key', 'Confirmed', 'Date', 'Deaths', 'Recovered']
+        return df[cols]
 
-        # df = df[df_cols]
-
-        return df
-    
-class CovidReport_Region(CovidReport_Global):
+class CovidReportRegion(CovidReportGlobal):
     '''
-    Report of Coronavirus activity for a specifed region
+    Report of Coronavirus activity broken down to regional levels
 
     Parameters:
-        location: str
-            Geographic area
-        location_type: str
-            Type of location
+
     '''
-    def __init__(self, location, location_type, lockdown_date=None):
+    def __init__(self):
         super().__init__()
-        self.location = location
-        self.location_type = location_type
-        self.lockdown_date = pd.np.datetime64(lockdown_date)
-        self.data = self.get_data()
-        # self.hubei = self.track_hubei()
-        # self.korea = self.track_korea()
+        self.cols = ['Combined_Key', 'FIPS', 'Lat', 'Long_', 'Country_Region',
+                     'Province_State', 'Admin2']
+        self.df = self.daily_reports.merge(self.FIPS_df[self.cols],
+                                           how='left', left_on='Combined_Key',
+                                           right_on='Combined_Key')
+        self.country_data = self.compile_country()
+        self.state_data = self.compile_state()
+        self.county_data = self.compile_county()
+
+    def compile_country(self):
+
+        df = self.df
+        df = df.groupby(['Country_Region', 'Date'])\
+                .sum()\
+                .reset_index()
+
+
+        df.rename(columns={'Lat':'Latitude',
+                           'Long_':'Longitude',
+                           'Country_Region':'Country/Region'}, inplace=True)
+
+        # Calculate active cases
+        df.loc[:, 'Active'] = df.loc[:, 'Confirmed']\
+                                - df.loc[:, 'Deaths']\
+                                - df.loc[:, 'Recovered']
+
+        df = df.merge(self.FIPS_df[['Combined_Key', 'Population']],
+                      how='left', left_on='Country/Region',
+                      right_on='Combined_Key')
+        
+        return df
+
+    def compile_state(self):
+        
+        df = self.df
+        df = df.groupby(['Country_Region', 'Province_State', 'Date'])\
+                .sum()\
+                .reset_index()
+
+        df.rename(columns={'Lat':'Latitude',
+                           'Long_':'Longitude',
+                           'Country_Region':'Country/Region',
+                           'Province_State':'Province/State'}, inplace=True)
+
+        # Calculate active cases
+        df.loc[:, 'Active'] = df.loc[:, 'Confirmed']\
+                                - df.loc[:, 'Deaths']\
+                                - df.loc[:, 'Recovered']
+
+        df = df.merge(self.FIPS_df.loc[self.FIPS_df['Admin2'].isnull(),
+                      ['Population', 'Country_Region', 'Province_State']],
+                      how='left',
+                      left_on=['Country/Region', 'Province/State'],
+                      right_on=['Country_Region', 'Province_State'])
+
+        return df
+
+    def compile_county(self):
+        df = self.df
+        df = df.groupby(['Combined_Key','Country_Region', 'Province_State', 'Admin2',
+                         'Date'])\
+                .sum()\
+                .reset_index()
+
+
+        df.rename(columns={'Lat':'Latitude',
+                           'Long_':'Longitude',
+                           'Country_Region':'Country/Region',
+                           'Province_State':'Province/State'}, inplace=True)
+
+        # Calculate active cases
+        df.loc[:, 'Active'] = df.loc[:, 'Confirmed']\
+                                - df.loc[:, 'Deaths']\
+                                - df.loc[:, 'Recovered']
+        
+        df = df.merge(self.FIPS_df[['Combined_Key', 'Population']], how='left',
+                       left_on=['Combined_Key'],
+                       right_on=['Combined_Key'])
+
+        return df
+
+class CovidReportLocale(object):
+    """docstring for CovidReportLocale"""
+    def __init__(self, data, init_date=None, lockdown_date=None,
+                 lockdown_end=None):
+        self.base = data
+        self.lockdown_date = np.datetime64(lockdown_date)
+        self.init_date = np.datetime64(init_date)
+        self.ifr = .0066
+        self.df = self.prep()
         
     def log_func(self, x, L, k, x0, b):
-        return L / (1 + pd.np.exp(-k*(x-x0))) + b
+        return L / (1 + np.exp(-k*(x-x0))) + b
 
-    def decay_func(self, x, a, b):
-        return a * pd.np.exp(-b*x)
-
-    def get_data(self):
-        '''
-        Creates filtered data set for specified location
-        Returns
-            DataFrame
-        '''
-        # Trim DataFrame to location specific
-        locations = ['Country/Region', 'Province/State', 'Admin2']
-        if self.location_type in locations:
-            df = self.df[self.df[self.location_type] == self.location]
-
-        else:
-            raise ValueError
-
-        # Create Time Index
-        today = pd.to_datetime('today')
-        df2 = pd.DataFrame(index=pd.date_range('01-22-2020', today))
+    def prep(self):
+        df = self.base
+        # df.fillna(0, inplace=True)
         
-        cols = ['Confirmed', 'Date', 'Deaths', 'Recovered']
-        df3 = df[cols].groupby('Date')\
-                      .sum()
-
-        # Join location data with datetime index
-        df = df2.join(df3, how='left', sort=True)
-
-        # Reset index
-        df.reset_index(inplace=True)
-        df.rename(columns={'index':'Date'}, inplace=True)
-
-        # Name the region
-        df.loc[:, 'Region'] = self.location
-
-        # Date Variables 
-        init_date = df.loc[df['Confirmed'] >= 1, 'Date'].iat[0] 
-        df.loc[:, 'Days'] = df.loc[:, 'Date'] - init_date
-        df.loc[:, 'Days'] = df.loc[:, 'Days'].dt.days
-
-        # # Calculate active cases
-        # df.loc[:, 'Active'] = df.loc[:, 'Confirmed']\
-        #                         - df.loc[:, 'Deaths']\
-        #                         - df.loc[:, 'Recovered']
-
-        # Calculate number of presumed cases based on mortality
-        df.loc[:, 'PresumedInfected'] = df.loc[:, 'Deaths']\
-                                           .shift(periods=-14)
-        df.loc[:, 'PresumedInfected'] = df.loc[:, 'PresumedInfected']\
-                                         / 0.0066 
-        df.loc[:, 'PresumedInfected'] = df.loc[:, 'PresumedInfected']\
-                                           .round()
+        # Date Variables
+        if pd.isnull(self.init_date):     
+            init_date = df.loc[df['Confirmed'] >= 1, 'Date'].iat[0]
+            df.loc[:, 'Days'] = df.loc[:, 'Date'] - init_date
+            df.loc[:, 'Days'] = df.loc[:, 'Days'].dt.days
+        else:
+            df.loc[:, 'Days'] = df.loc[:, 'Date'] - self.init_date
+            df.loc[:, 'Days'] = df.loc[:, 'Days'].dt.days
 
         # Calculate Case Fatatlity Rate
         df.loc[:, 'CFR'] = df.loc[:, 'Deaths'] / df.loc[:, 'Confirmed']
 
-        # Calculate percentage of "true" cases country has discovered
-        df.loc[:, 'DiscoveryRate'] = df.loc[:, 'Confirmed'] / df.loc[:, 'PresumedInfected']
+        # Calculate number of presumed cases based on mortality
+        df.loc[:, 'EstimatedInfected'] = df.loc[:, 'Deaths']\
+                                           .shift(periods=-14)
+        df.loc[:, 'EstimatedInfected'] = df.loc[:, 'EstimatedInfected']\
+                                         / self.ifr 
+        df.loc[:, 'EstimatedInfected'] = df.loc[:, 'EstimatedInfected']\
+                                           .round()
 
-        df.fillna(0, inplace=True)
-
-        df.loc[df['PresumedInfected'] == 0, 'PresumedInfected'] = pd.np.NaN
-
-        if self.lockdown_date == None:
-            pass
-        else:
-            df['LockdownDays'] = df['Date'] - self.lockdown_date
-            df['LockdownDays'] = df['LockdownDays'].dt.days
+        df['NewConfirmed'] = df['Confirmed'].diff()
+        df['NewDeaths'] = df['Deaths'].diff()
 
         return df
+    
+    def fit_logcurve(self, variable):
+        # Fit Logarithmic Curve to Confirmed Growth Rate
+        xdata = self.df.loc[self.df['Days'] > 0, 'Days']
+        ydata = self.df.loc[self.df['Days'] > 0, variable]
+        p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+        bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+                  [np.inf, np.inf, np.inf, np.inf])
+        popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
+                               bounds=bounds, maxfev=5000)
+ 
+        # Calculate predicted confirmed based on logarithmic fit
+        self.df.loc[self.df['Days'] >= 0, 'Predicted{}'.format(variable)]\
+            = self.log_func(self.df.loc[self.df['Days'] >= 0, 'Days'],
+                            *popt)
+
+    def attack(self):
+        # Calculate Uninfected Population and Attack Rate
+        self.df.loc[:, 'AtRisk'] = self.df.loc[:, 'Population']\
+                              - self.df.loc[:, 'PredictedConfirmed']
+        self.df['AtRisk'] = self.df['AtRisk'].shift(1)
+        self.df['NewPredicted'] = self.df['PredictedConfirmed'].diff()\
+                                                               .round()
+        self.df.loc[:, 'AttackRate'] = self.df.loc[:, 'NewPredicted']\
+                                  / self.df.loc[:, 'AtRisk']\
+                                  * 100000
+
+    def rki_method(self):
+        self.df['roll8'] = self.df['NewPredicted'].rolling(8, min_periods=8)\
+                                               .sum()
+        self.df['roll4'] = self.df['NewPredicted'].rolling(4, min_periods=4)\
+                                               .sum()
+
+        self.df.loc[:, 'R_eff'] = self.df.loc[:, 'roll4']\
+                                / (self.df.loc[:, 'roll8']
+                                    - self.df.loc[:, 'roll4'])
+
+        self.df.drop(columns=['roll4', 'roll8'], inplace=True)
+
+    # def decay_func(self, x, a, b):
+    #     return a * np.exp(-b*x)
+
+    # def get_data(self):
+    #     '''
+    #     Creates filtered data set for specified location
+    #     Returns
+    #         DataFrame
+    #     '''
+    #     # Trim DataFrame to location specific
+    #     locations = ['Country/Region', 'Province/State', 'Admin2']
+    #     if self.location_type in locations:
+    #         df = self.daily_reports[self.daily_reports[self.location_type] == self.location]
+
+    #     else:
+    #         raise ValueError
+
+
+        
+    #     cols = ['Confirmed', 'Date', 'Deaths', 'Recovered']
+    #     df3 = df[cols].groupby('Date')\
+    #                   .sum()
+
+
+    #     # Reset index
+    #     df.reset_index(inplace=True)
+    #     df.rename(columns={'index':'Date'}, inplace=True)
+
+
+    #     # Add Population column
+    #     df.loc[:, 'Location'] = self.geo_key
+    #     df = df.merge(self.FIPS_df[['Combined_Key', 'Population']], 
+    #                   left_on='Location', right_on='Combined_Key')
+
+    #     # Calculate active cases
+    #     df.loc[:, 'Active'] = df.loc[:, 'Confirmed']\
+    #                             - df.loc[:, 'Deaths']\
+    #                             - df.loc[:, 'Recovered']
+
+    #     # Calculate number of presumed cases based on mortality
+    #     df.loc[:, 'PresumedInfected'] = df.loc[:, 'Deaths']\
+    #                                        .shift(periods=-14)
+    #     df.loc[:, 'PresumedInfected'] = df.loc[:, 'PresumedInfected']\
+    #                                      / 0.0066 
+    #     df.loc[:, 'PresumedInfected'] = df.loc[:, 'PresumedInfected']\
+    #                                        .round()
+
+    #     # Calculate Case Fatatlity Rate
+    #     df.loc[:, 'CFR'] = df.loc[:, 'Deaths'] / df.loc[:, 'Confirmed']
+
+    #     # Calculate percentage of "true" cases country has discovered
+    #     df.loc[:, 'DiscoveryRate'] = df.loc[:, 'Confirmed']\
+    #                                  / df.loc[:, 'PresumedInfected']
+
+    #     df.fillna(0, inplace=True)
+
+    #     df.loc[df['PresumedInfected'] == 0, 'PresumedInfected'] = np.NaN
+
+    #     if self.lockdown_date == None:
+    #         pass
+    #     else:
+    #         df['LockdownDays'] = df['Date'] - self.lockdown_date
+    #         df['LockdownDays'] = df['LockdownDays'].dt.days
+
+    #     # Fit Logarithmic Curve to Confirmed Growth Rate
+    #     xdata = df.loc[df['Days'] > 0, 'Days']
+    #     ydata = df.loc[df['Days'] > 0, 'Confirmed']
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
+    #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
+    #                            bounds=bounds, maxfev=5000)
+ 
+    #     # Calculate predicted confirmed based on logarithmic fit
+    #     df.loc[df['Days'] >= 0, 'PredictedConfirmed']\
+    #         = self.log_func(df.loc[df['Days'] >= 0, 'Days'],
+    #                         *popt)
+
+    #     # Fit Logarithmic Curve to Death Growth Rate
+    #     xdata = df.loc[df['Days'] > 0, 'Days']
+    #     ydata = df.loc[df['Days'] > 0, 'Deaths']
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
+    #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
+    #                            bounds=bounds, maxfev=5000)
+
+    #     # Calculate predicted deaths based on logarithmic fit
+    #     df.loc[df['Days'] >= 0, 'PredictedDeaths']\
+    #         = self.log_func(df.loc[df['Days'] >= 0, 'Days'],
+    #                         *popt)
+
+    #     # Calculate At Risk Population and Attack Rate
+    #     df.loc[:, 'AtRisk'] = df.loc[:, 'Population']\
+    #                           - df.loc[:, 'PredictedConfirmed']
+    #     df['AtRisk'] = df['AtRisk'].shift(1)
+    #     df['NewConfirmed'] = df['PredictedConfirmed'].diff()
+    #     df.loc[:, 'AttackRate'] = df.loc[:, 'NewConfirmed']\
+    #                               / df.loc[:, 'AtRisk']
+
+    #     return df
 
     # def track_hubei(self):
     #     '''
@@ -508,7 +790,7 @@ class CovidReport_Region(CovidReport_Global):
     #     #                         - df.loc[:, 'Recovered']
 
     #     # Start of the Lockdown in Hubei Province
-    #     start_date = pd.np.datetime64('2020-01-23')
+    #     start_date = np.datetime64('2020-01-23')
 
     #     # Calculate days since lockdown start
     #     df.loc[:, 'LockdownDays'] = df.loc[:, 'Date'] - start_date
@@ -524,14 +806,14 @@ class CovidReport_Region(CovidReport_Global):
 
     #     df.fillna(0, inplace=True)
 
-    #     df.loc[df['PresumedInfected'] == 0, 'PresumedInfected'] = pd.np.NaN
+    #     df.loc[df['PresumedInfected'] == 0, 'PresumedInfected'] = np.NaN
 
     #     # Fit Logarithmic Curve to Hubei Death Growth Rate
     #     xdata = df.loc[df['LockdownDays'] >= 0, 'LockdownDays']
     #     ydata = df.loc[df['LockdownDays'] >= 0, 'Deaths']
-    #     p0 = [max(ydata), 1,  pd.np.median(xdata), min(ydata)]
-    #     bounds = ([-pd.np.inf, -pd.np.inf, -pd.np.inf, 0], 
-    #               [pd.np.inf, pd.np.inf, pd.np.inf, pd.np.inf])
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
     #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
     #                            bounds=bounds)
 
@@ -543,9 +825,9 @@ class CovidReport_Region(CovidReport_Global):
     #     # Fit Logarithmic Curve to Hubei Confirmed Growth Rate
     #     xdata = df.loc[df['LockdownDays'] >= 0, 'LockdownDays']
     #     ydata = df.loc[df['LockdownDays'] >= 0, 'Confirmed']
-    #     p0 = [max(ydata), 1,  pd.np.median(xdata), min(ydata)]
-    #     bounds = ([-pd.np.inf, -pd.np.inf, -pd.np.inf, 0], 
-    #               [pd.np.inf, pd.np.inf, pd.np.inf, pd.np.inf])
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
     #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
     #                            bounds=bounds)
  
@@ -560,9 +842,9 @@ class CovidReport_Region(CovidReport_Global):
     #     ydata = df.loc[(df['LockdownDays'] >= 0)\
     #                    & (df['PresumedInfected'].notnull()),
     #                    'PresumedInfected']
-    #     p0 = [max(ydata), 1,  pd.np.median(xdata), min(ydata)]
-    #     bounds = ([-pd.np.inf, -pd.np.inf, -pd.np.inf, 0], 
-    #               [pd.np.inf, pd.np.inf, pd.np.inf, pd.np.inf])
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
     #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
     #                            bounds=bounds)
 
@@ -687,7 +969,7 @@ class CovidReport_Region(CovidReport_Global):
     #     #                         - df.loc[:, 'Recovered']
 
     #     # Start of the Virus in South Korea
-    #     init_date = pd.np.datetime64('2020-01-20')
+    #     init_date = np.datetime64('2020-01-20')
 
     #     # Calculate days since Initial Infection
     #     df.loc[:, 'Days'] = df.loc[:, 'Date'] - init_date
@@ -704,9 +986,9 @@ class CovidReport_Region(CovidReport_Global):
     #     # Fit Logarithmic Curve to Korea Death Growth Rate
     #     xdata = df.loc[df['Days'] >= 0, 'Days']
     #     ydata = df.loc[df['Days'] >= 0, 'Deaths']
-    #     p0 = [max(ydata), 1,  pd.np.median(xdata), min(ydata)]
-    #     bounds = ([-pd.np.inf, -pd.np.inf, -pd.np.inf, 0], 
-    #               [pd.np.inf, pd.np.inf, pd.np.inf, pd.np.inf])
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
     #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
     #                            bounds=bounds)
 
@@ -718,9 +1000,9 @@ class CovidReport_Region(CovidReport_Global):
     #     # Fit Logarithmic Curve to Korea Confirmed Growth Rate
     #     xdata = df.loc[df['Days'] >= 0, 'Days']
     #     ydata = df.loc[df['Days'] >= 0, 'Confirmed']
-    #     p0 = [max(ydata), 1,  pd.np.median(xdata), min(ydata)]
-    #     bounds = ([-pd.np.inf, -pd.np.inf, -pd.np.inf, 0], 
-    #               [pd.np.inf, pd.np.inf, pd.np.inf, pd.np.inf])
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
     #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
     #                            bounds=bounds)
  
@@ -735,9 +1017,9 @@ class CovidReport_Region(CovidReport_Global):
     #     ydata = df.loc[(df['Days'] >= 0)\
     #                    & (df['PresumedInfected'].notnull()),
     #                    'PresumedInfected']
-    #     p0 = [max(ydata), 1,  pd.np.median(xdata), min(ydata)]
-    #     bounds = ([-pd.np.inf, -pd.np.inf, -pd.np.inf, 0], 
-    #               [pd.np.inf, pd.np.inf, pd.np.inf, pd.np.inf])
+    #     p0 = [max(ydata), 1,  np.median(xdata), min(ydata)]
+    #     bounds = ([-np.inf, -np.inf, -np.inf, 0], 
+    #               [np.inf, np.inf, np.inf, np.inf])
     #     popt, pcov = curve_fit(self.log_func, xdata, ydata, p0=p0, 
     #                            bounds=bounds)
 
@@ -1025,7 +1307,7 @@ class CovidReport_Region(CovidReport_Global):
     #                      hue='Type')
 
     #     # Lockdown phaseline
-    #     if pd.np.isnat(self.lockdown_date):
+    #     if np.isnat(self.lockdown_date):
     #         pass
     #     else:
     #         g.axvline(x=self.lockdown_date, color=dat_pal[3], linestyle='--')
@@ -1081,7 +1363,7 @@ class CovidReport_Region(CovidReport_Global):
     #                      hue='Type')
 
     #     # Lockdown phaseline
-    #     if pd.np.isnat(self.lockdown_date):
+    #     if np.isnat(self.lockdown_date):
     #         pass
     #     else:
     #         g.axvline(x=self.lockdown_date, color=dat_pal[3], linestyle='--')
@@ -1137,7 +1419,7 @@ class CovidReport_Region(CovidReport_Global):
     #                      hue='Type')
 
     #     # Lockdown phaseline
-    #     if pd.np.isnat(self.lockdown_date):
+    #     if np.isnat(self.lockdown_date):
     #         pass
     #     else:
     #         g.axvline(x=self.lockdown_date, color=dat_pal[3], linestyle='--')
@@ -1255,3 +1537,17 @@ class FluReportUS(object):
         df.iloc[:, 3:] = df.iloc[:, 3:].apply(pd.to_numeric, errors='coerce')
 
         return df
+
+{'AL':'Alabama', 'NE':'Nebraska','AK':'Alaska', 'NV':'Nevada', 'AZ':'Arizona',
+'NH':'New Hampshire','AR':'Arkansas', 'NJ':'New Jersey', 'CA':'California',
+'NM':'New Mexico', 'CO':'Colorado', 'NY':'New York', 'CT':'Connecticut',
+'NC':'North Carolina', 'DE':'Delaware', 'ND':'North Dakota', 
+'DC':'District of Columbia', 'OH':'Ohio', 'FL':'Florida', 'OK':'Oklahoma',
+'GA':'Georgia', 'OR':'Oregon', 'HI':'Hawaii', 'PA':'Pennsylvania',
+'ID':'Idaho', 'PR':'Puerto Rico', 'IL':'Illinois', 'RI':'Rhode Island',
+'IN':'Indiana', 'SC':'South Carolina', 'IA':'Iowa', 'SD':'South Dakota',
+'KS':'Kansas', 'TN':'Tennessee', 'KY':'Kentucky', 'TX':'Texas',
+'LA':'Louisiana', 'UT':'Utah', 'ME':'Maine', 'VT':'Vermont', 'MD':'Maryland',
+'VA':'Virginia', 'MA':'Massachusetts', 'VI':'Virgin Islands', 'MI':'Michigan',
+'WA':'Washington', 'MN':'Minnesota', 'WV':'West Virginia', 'MS':'Mississippi',
+'WI':'Wisconsin', 'MO':'Missouri', 'WY':'Wyoming', 'MT':'Montana'}
