@@ -53,4 +53,4 @@ FROM   fec_2012_congress_results
 WHERE  fec_2012_congress_results.d LIKE '%S%'
    AND fec_2012_congress_results.totalvotes IS NULL
    AND fec_2012_congress_results.generalvotes IS NOT NULL
-   AND fec_2012_congress_results.party NOT LIKE '%Combined Parties%'; 
+   AND fec_2012_congress_results.party NOT LIKE '%Combined Parties%'

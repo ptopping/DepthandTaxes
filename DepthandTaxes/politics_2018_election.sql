@@ -29,5 +29,5 @@ SELECT TRIM(fec_2018_senate_results.candidate_name)      AS candidatename
        ,fec_2018_senate_results.state                    AS statename
 FROM   fec_2018_senate_results
 WHERE  fec_2018_senate_results.general_votes IS NOT NULL
-   AND fec_2018_senate_results.total_votes IS NULL; 
+   AND fec_2018_senate_results.total_votes IS NULL
 

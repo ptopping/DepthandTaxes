@@ -29,4 +29,4 @@ SELECT TRIM(fec_2014_senate_results.candidatename)      AS candidatename
        ,fec_2014_senate_results.state                   AS statename
 FROM   fec_2014_senate_results
 WHERE  TO_NUMBER(REGEXP_REPLACE(fec_2014_senate_results.generalvotes, '[^0-9.]+')) > 0
-   AND fec_2014_senate_results.totalvotes IS NULL; 
+   AND fec_2014_senate_results.totalvotes IS NULL

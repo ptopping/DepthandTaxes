@@ -126,7 +126,7 @@ class DataTable(object):
 		corr, pval = stats.pearsonr(x=self.df[var], y=self.df[self.resp_var])
 
 		tbl = pd.DataFrame({'Mean' : [round(self.df[var].mean(),5),round(self.df[self.resp_var].mean(),5)], 
-			'Std Dev' : [round(self.df[var].std(),5),round(self.df[self.resp_var].std(),5)], 'Correlation':[round(corr,5),pd.np.nan], 'Signif. Prob.':[round(pval,5),pd.np.nan],
+			'Std Dev' : [round(self.df[var].std(),5),round(self.df[self.resp_var].std(),5)], 'Correlation':[round(corr,5),np.nan], 'Signif. Prob.':[round(pval,5),np.nan],
 			'Number':[round(self.df[var].count(),5),np.nan]},index=[var,self.resp_var])
 		tbl.fillna('',inplace=True)
 
