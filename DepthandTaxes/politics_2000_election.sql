@@ -73,4 +73,4 @@ FROM   fec_2000_senate_results
               ON fec_2000_senate_results.state = states.postal
 WHERE  fec_2000_senate_results.party IS NOT NULL
    AND fec_2000_senate_results.party != 'Combined'
-   AND fec_2000_senate_results.generalresults > 0; 
+   AND fec_2000_senate_results.generalresults > 0

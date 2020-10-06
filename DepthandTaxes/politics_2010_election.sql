@@ -30,5 +30,5 @@ SELECT TRIM(fec_2010_congress_results.candidatenamelastfirst)    AS candidatenam
 FROM   fec_2010_congress_results
 WHERE  fec_2010_congress_results.district LIKE '%S%'
    AND fec_2010_congress_results.general IS NOT NULL
-   AND fec_2010_congress_results.totalvotes IS NULL; 
+   AND fec_2010_congress_results.totalvotes IS NULL
 

@@ -4,32 +4,140 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 # import geopandas as gpd
-# from DepthandTaxes.tools import results
+from DepthandTaxes.tools import dattools
 # from DepthandTaxes.tools import census
 
-url = 'https://api.census.gov/data/2019/pep/charage?get=AGE_DESC,DATE_CODE,'+
-'DATE_DESC,NAME,POP&for=state:*&AGE!=999&HISP!=0&SEX=0&RACE=1&RACE=2&RACE=3'+
-'&RACE=4&RACE=5&RACE=6'
+class ElectionData(object):
+    """docstring for ElectionData"""
+    def __init__(self, con):
+        self.con = con
+        self.url = 'https://api.census.gov/data/2010/dec/sf1?get=P001001,'\
+                   'NAME,DIVISION&for=state:*'
+        self.df = pd.read_json(self.url)
+        self.df.columns = self.df.loc[0]
+        self.df = self.df.drop(0)
+        self.year_code_list_2010 = ['1', '5', '7', '9', '11', '12']
+        self.data = None
+    
+    def load_results(self):
+        df = pd.DataFrame()
+        elec_list = ['2000', '2002', '2004', '2006', '2008', '2010', '2012',
+                     '2014', '2016', '2018']
 
-df = pd.read_json(url)
+        for v in elec_list:
+            file = open('..\\DepthandTaxes\\DepthandTaxes\\politics_'\
+                        '{}_election.sql'.format(v), 'r')
+            sql_string = file.read()
+            df2 = pd.read_sql(sql=sql_string, con=self.con)
+            df = df.append(df2)
+        
+        df.rename(columns={'GENERALDATE':'YEAR'}, inplace=True)
+        df['YEAR'] = df['YEAR'].dt.year
+        
+        self.results_df = df
 
-df2 = df.copy()
+    def census_pull(self, date_code=None, year=2000):
+        race_list = ['1', '2', '3', '4', '5', '6']
+        hisp_dict = {'1':'Non-Hispanic', '2':'Hispanic'}
+        race_dict = {'1':'White', '2':'Black',
+                     '3':'American Indian and Alaska Native', '4':'Asian',
+                     '5':'"Native Hawaiian and Other Pacific Islander',
+                     '6':'Two or more races'}
+        div_dict = {'1':'New England', '2':'Middle Atlantic',
+                    '3':'East North Central', '4':'West North Central',
+                    '5':'South Atlantic', '6':'East South Central',
+                    '7':'West South Central', '8':'Mountain', '9':'Pacific'}
 
-df2.columns = df2.loc[0]
-df2 = df2.drop(0)
-df2['AGE'] = df2['AGE'].apply(pd.to_numeric)
-df2['POP'] = df2['POP'].apply(pd.to_numeric)
-df2['DATE_CODE'] = df2['DATE_CODE'].apply(pd.to_numeric)
-df2['DATE_DESC'] = df2['DATE_DESC'].str.extract(r'([0-9\/]+)')
-df2['DATE_DESC'] = df2['DATE_DESC'].apply(pd.to_datetime)
-hisp_dict = {'1':'Non Hispanic', '2':'Hispanic'}
-race_dict = {'1':'White', '2':'Black', '3':'American Indian and Alaska Native', '4':'Asian', '5':'"Native Hawaiian and Other Pacific Islander', '6':'Two or more races'}
-df2['HISP'] = df2['HISP'].map(hisp_dict)
-df2['RACE'] = df2['RACE'].map(race_dict)
+        if year == 2000:
+            year_code_list = ['1', '4', '6', '8', '10']
+            url = 'https://api.census.gov/data/2000/pep/int_charagegroups?'\
+                  + 'get=DATE_,DATE_DESC,DIVISION,GEONAME,HISP,POP,RACE,SEX'\
+                  + '&for=state:*&AGEGROUP=22'
+            df = pd.read_json(url)
+            df.columns = df.loc[0]
+            df = df.drop(0)
+            df.rename(columns={'GEONAME':'NAME'}, inplace=True)
 
-df2[(df2['AGE'] >= 18) & (df2['DATE_CODE'] >= 3)].groupby(['DATE_DESC', 'NAME', 'HISP','RACE']).sum()
+            url2 = 'https://api.census.gov/data/2000/pep/int_charagegroups?'\
+                   + 'get=DATE_,DATE_DESC,DIVISION,GEONAME,HISP,POP,RACE,SEX'\
+                   + '&for=state:*&AGEGROUP=26'
+            df2 = pd.read_json(url2)
+            df2.columns = df2.loc[0]
+            df2 = df2.drop(0)
+            df2.rename(columns={'GEONAME':'NAME'}, inplace=True)
 
+            df = df.append(df2)
+        
+            df = df[(df['DATE_'].isin(year_code_list))\
+                    & (df['HISP'] != '0')\
+                    & (df['RACE'].isin(race_list))\
+                    & (df['SEX'] == '0')]
 
+            df['POP'] = df['POP'].apply(pd.to_numeric)
+            df['DATE_DESC'] = df['DATE_DESC'].str.extract(r'([0-9\/]+)')
+            df['DATE_DESC'] = df['DATE_DESC'].apply(pd.to_datetime)
+        
+        if year == 2010:
+            url = 'https://api.census.gov/data/2019/pep/charagegroups'\
+                  + '?get=DATE_DESC,NAME,POP,RACE&for=state:*'\
+                  + '&DATE_CODE={}&AGEGROUP=22&AGEGROUP=26'.format(date_code)\
+                  + '&HISP!=0&SEX=0'
+            df = pd.read_json(url)
+            df.columns = df.loc[0]
+            df = df.drop(0)
+
+            df = df[df['RACE'].isin(race_list)]
+            df['POP'] = df['POP'].apply(pd.to_numeric)
+            df['DATE_DESC'] = df['DATE_DESC'].str.extract(r'([0-9\/]+)')
+            df['DATE_DESC'] = df['DATE_DESC'].apply(pd.to_datetime)
+
+            df2 = self.df[['NAME','DIVISION']]
+            df = df.merge(df2, left_on='NAME', right_on='NAME')
+
+        df['HISP'] = df['HISP'].map(hisp_dict)
+        df['RACE'] = df['RACE'].map(race_dict)
+        df['DIVISION'] = df['DIVISION'].map(div_dict)
+        
+        df = df.groupby(['DATE_DESC', 'DIVISION', 'NAME', 'HISP','RACE'])\
+               .sum()
+        df = df.unstack()\
+               .unstack()
+
+        df.columns = df.columns.map(''.join).str.strip()
+        df = df.reset_index()
+        return df
+
+    def compile_census(self):
+        df = pd.DataFrame()
+        df = df.append(self.census_pull(year=2000))
+        for v in self.year_code_list_2010:
+            df = df.append(self.census_pull(date_code=v, year=2010))
+
+        df.rename(columns={'DATE_DESC':'YEAR', 'NAME':'STATENAME'},
+                  inplace=True)
+        df['YEAR'] = df['YEAR'].dt.year
+
+        self.census_df = df
+
+    def merge_df(self):
+        merge_cols = ['STATENAME', 'YEAR']
+        df = self.results_df.merge(self.census_df, left_on=merge_cols,
+                                   right_on=merge_cols)
+        df.columns = df.columns.str.upper()
+        df.columns = df.columns.str.replace('POP', '')
+        df.columns = df.columns.str.replace(' ', '')
+        df.columns = df.columns.str.replace('"', '')
+
+        df = df[['DEMPRES', 'DISTRICT', 'GENERALVOTES', 'INCUMBENTINDICATOR',
+                 'MIDTERM', 'YEAR', 'DIVISION', 'PARTYNAME',
+                 'NATIVEHAWAIIANANDOTHERPACIFICISLANDERHISPANIC',
+                 'NATIVEHAWAIIANANDOTHERPACIFICISLANDERNON-HISPANIC',
+                 'AMERICANINDIANANDALASKANATIVEHISPANIC',
+                 'AMERICANINDIANANDALASKANATIVENON-HISPANIC', 'ASIANHISPANIC',
+                 'ASIANNON-HISPANIC', 'BLACKHISPANIC', 'BLACKNON-HISPANIC',
+                 'TWOORMORERACESHISPANIC', 'TWOORMORERACESNON-HISPANIC',
+                 'WHITEHISPANIC', 'WHITENON-HISPANIC']]
+        self.data = df
 # census2000 = census.CensusLoad('st-est00int-alldata',kind='group').pretty()
 # census2010 = census.CensusLoad('sc-est2017-alldata6').projection()
 # df = pd.concat([census2000, census2010],sort=True)

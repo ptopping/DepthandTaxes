@@ -52,4 +52,4 @@ FROM   fec_2004_congress_results
 WHERE  TRIM(fec_2004_congress_results.district) = 'S'
    AND fec_2004_congress_results.totalvotes IS NULL
    AND fec_2004_congress_results.party IS NOT NULL
-   AND fec_2004_congress_results.general IS NOT NULL; 
+   AND fec_2004_congress_results.general IS NOT NULL

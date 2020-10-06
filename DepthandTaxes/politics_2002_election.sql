@@ -38,4 +38,4 @@ FROM   fec_2002_congress_results
               ON TRIM(fec_2002_congress_results.state) = states.postal
 WHERE  fec_2002_congress_results.totalvotes IS NULL
    AND fec_2002_congress_results.district = 'S'
-   AND TO_NUMBER(REGEXP_REPLACE(fec_2002_congress_results.generalresults, '[^0-9.]+')) > 0; 
+   AND TO_NUMBER(REGEXP_REPLACE(fec_2002_congress_results.generalresults, '[^0-9.]+')) > 0

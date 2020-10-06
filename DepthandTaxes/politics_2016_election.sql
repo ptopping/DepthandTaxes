@@ -50,4 +50,4 @@ SELECT TRIM(fec_2016_senate_results.candidatename)      AS candidatename
        ,fec_2016_senate_results.state                   AS statename
 FROM   fec_2016_senate_results
 WHERE  fec_2016_senate_results.generalvotes IS NOT NULL
-   AND fec_2016_senate_results.totalvotes IS NULL; 
+   AND fec_2016_senate_results.totalvotes IS NULL

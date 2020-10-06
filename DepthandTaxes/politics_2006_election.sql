@@ -30,4 +30,4 @@ SELECT TRIM(fec_2006_congress_results.lastnamefirst)             AS candidatenam
 FROM   fec_2006_congress_results
 WHERE  TRIM(fec_2006_congress_results.district) = 'S'
    AND fec_2006_congress_results.general IS NOT NULL
-   AND fec_2006_congress_results.totalvotes IS NULL; 
+   AND fec_2006_congress_results.totalvotes IS NULL
