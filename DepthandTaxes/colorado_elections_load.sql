@@ -41,6 +41,7 @@ DROP TABLE co_sos_elections_2018geprecinctlevelturnout PURGE;
 DROP TABLE co_sos_elections_2018primaryresults PURGE;
 DROP TABLE co_sos_elections_2019FinalResults PURGE;
 DROP TABLE co_sos_elections_2020presprimaryresultsbycountyfinal PURGE;
+DROP TABLE co_sos_elections_2020FinalResults PURGE;
 
 CREATE TABLE co_sos_elections_turnout
   (
@@ -2664,6 +2665,7 @@ WHEN NOT MATCHED THEN
            ,r2018.state
            ,r2018.votes
            ,r2018.year );  
+
 CREATE TABLE co_sos_elections_2019FinalResults
   (
      state                 VARCHAR2(128)

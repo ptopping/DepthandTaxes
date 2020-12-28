@@ -9,14 +9,46 @@ from scipy import stats
 import statsmodels.api as sm
 
 dat_pal = ['#29506D', '#AA3939', '#2D882D', '#AA7939', '#718EA4', '#FFAAAA',
-		   '#88CC88', '#FFDBAA', '#042037', '#550000', '#004400', '#553100',
-		   '#496D89', '#D46A6A', '#55AA55', '#D4A76A', '#123652', '#801515',
-		   '#116611', '#805215']
+           '#88CC88', '#FFDBAA', '#042037', '#550000', '#004400', '#553100',
+           '#496D89', '#D46A6A', '#55AA55', '#D4A76A', '#123652', '#801515',
+           '#116611', '#805215']
 light_seq_dat_pal = sns.light_palette('#29506D')
 sns.set_style('whitegrid')
 sns.set_palette(dat_pal)
 
 # plt.style.use('d://depthandtaxes//depthandtaxes//plotting//dat.mplstyle')
+
+class Forecasting(object):
+    """docstring for Forecasting"""
+    def __init__(self, df):
+        self.df = df
+
+    def eda(self, var, timevar, type, frequency=None):
+        df = self.df[[var, timevar]]
+        df.dropna(inplace=True)
+        df.reset_index(drop=True, inplace=True)
+        df.index = df.index + 1
+        df['MA3*'] = df[var].rolling(3).mean()
+
+        X = df.index
+        X = sm.add_constant(X)
+        y = df[var]
+        model = sm.OLS(y, X)
+        results = model.fit()
+        df['TREND*'] = results.predict()
+
+        df = df[[timevar, var, 'MA3*', 'TREND*']]
+        df = df.melt(id_vars='YEAR')
+        df.rename(columns={'variable':'Plot', 'value':var}, inplace=True)
+
+        if type == 'df':
+            return df
+        if type == 'plot':
+            if frequency == 'year':
+                df[timevar] = df[timevar].dt.year
+
+            g = sns.lineplot(data=df.dropna(), x=timevar, y=var, hue='Plot',
+                             style='Plot')
 
 class DataTable(object):
 	"""docstring for DataTable"""
