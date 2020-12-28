@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 # import geopandas as gpd
 from DepthandTaxes.tools import dattools
-# from DepthandTaxes.tools import census
+from DepthandTaxes.tools import census
 import glob
 import os
 import statsmodels.api as sm
@@ -20,7 +20,8 @@ class ColoradoData(object):
         self.con = con
         self.data_dict = {'turnout':'co_elections_turnout',
                           'turnout_county':'co_elections_turnout_county',
-                          'results':'co_elections_turnout_results'}
+                          'results':'co_elections_results',
+                          'house':'co_elections_house'}
 
     def etl(self, subject):
         fname = self.data_dict.get(subject)
@@ -31,16 +32,40 @@ class ColoradoData(object):
 
         return df   
 
+    def calc_lean(self, year, cols):
+        by = cols + ['PARTY']
+        df = self.etl('results')
+        df = df[df['YEAR'].dt.year == year]
+
+        df2 = df.groupby(cols)\
+                .sum()\
+                .reset_index()
+        df2.rename(columns={'VOTES':'TOTALVOTES'}, inplace=True)
+        df3 = df.groupby(by=by)\
+                .sum()\
+                .reset_index()
+
+        df3 = df3.merge(df2, left_on=cols, right_on=cols)
+        return df3
+
+
+
+    # def censuspull(self):
+    #     data = census.CensusData('Colorado')
+    #     data.compile_census()
+    #     df = data.ratio(level=1)
+
+    #     return df
+
     def tcc(self, df, var):
         df2 = df.loc[df['YEAR'].dt.year.isin(range(2004,2020,2)),
                      ['YEAR', var]]
         df2.dropna(inplace=True)
-        df2.reset_index(drop=True, inplace=True)
-        df2.index = df2.index + 1
+        df2['YEAR'] = df2['YEAR'].dt.year
 
         df2['MA3*'] = df2[var].rolling(3).mean()
 
-        X = df2.index
+        X = df2['YEAR']
         X = sm.add_constant(X)
         y = df2[var]
         model = sm.OLS(y, X)
@@ -50,7 +75,7 @@ class ColoradoData(object):
         df3 = df.loc[df['YEAR'].dt.year.isin(range(2005,2021,2)),
                      ['YEAR', var]]
         df3.dropna(inplace=True)
-        df3.reset_index(drop=True, inplace=True)
+        df3['YEAR'] = df3['YEAR'].dt.year
 
         df2 = df2.append(df3)
 
@@ -62,20 +87,19 @@ class ColoradoData(object):
 
     def plot_tcc(self, df, var):
         df = self.tcc(df, var)
-        
+        # df['YEAR'] = df['YEAR'].dt.year
         g = sns.lineplot(data=df.dropna(), x='YEAR', y=var, hue='Plot',
                          style='Plot')
         
         if var == 'BALLOTSCAST':
             g.yaxis.set_major_formatter(ticker.StrMethodFormatter('{x:,.0f}'))
-        if var in ['TURNOUT', 'STATEPERCENTAGE']:
+        if var in ['TURNOUT', 'DEMLEAN']:
             g.yaxis.set_major_formatter(ticker.PercentFormatter(1))
 
     def acf_plot(self, df, var):
         df = self.tcc(df, var)
 
-        df2 = df.loc[df['YEAR'].dt.year.isin(range(2004,2020,2)),
-                     ['YEAR', var]]
+        df2 = df.loc[df['YEAR'].isin(range(2004,2020,2)), ['YEAR', var]]
         df2.dropna(inplace=True)
         df2.set_index('YEAR', inplace=True)
 
@@ -87,6 +111,7 @@ class ColoradoData(object):
     def forecast_plot(self, df, var):
         df2 = df.loc[df['YEAR'].dt.year.isin(range(2004,2020,2)),
                      ['YEAR', var]]
+
         df2.dropna(inplace=True)
         df2.set_index('YEAR', inplace=True)
 
@@ -111,13 +136,14 @@ class ColoradoData(object):
         df2.rename(columns={'variable':'Plot', 'value':var},
                    inplace=True)
         df2 = df2[df2[var] > 0]
+        df2['YEAR'] = df2['YEAR'].dt.year
 
         g = sns.lineplot(data=df2.dropna(), x='YEAR', y=var,
                          hue='Plot', style='Plot')
 
         if var == 'BALLOTSCAST':
             g.yaxis.set_major_formatter(ticker.StrMethodFormatter('{x:,.0f}'))
-        if var in ['TURNOUT', 'STATEPERCENTAGE']:
+        if var in ['TURNOUT', 'DEMLEAN']:
             g.yaxis.set_major_formatter(ticker.PercentFormatter(1))
 
 
@@ -125,15 +151,20 @@ class ColoradoData(object):
         df = self.etl('turnout_county')
 
         state_avg = df['TURNOUT'].mean()
-        df['COMP'] = (df['TURNOUT'] - state_avg) / state_avg
+        df['COMP'] = df['TURNOUT'] - state_avg
+        df['YEAR'] = df['YEAR'].dt.year
 
-        df = df.style.format({'COMP':'{:+.2%}'})
+        df = df.style.format({'COMP':'{:+.2%}', 'TURNOUT':'{:.2%}'})
 
         return df, state_avg
 
     def partisan_lean(self):
         df = self.etl('results')
         cols = ['OFFICEISSUEJUDGESHIP', 'YEAR']
+        
+        df = df[~df['OFFICEISSUEJUDGESHIP'].str.contains('District')]
+        df = df[~df['OFFICEISSUEJUDGESHIP'].str.contains('DISTRICT')]
+
         df2 = df.groupby(cols).sum().reset_index()
         df2.rename(columns={'VOTES':'TOTALVOTES'}, inplace=True)
         df3 = df.groupby(['OFFICEISSUEJUDGESHIP', 'PARTY', 'YEAR'])\
@@ -141,6 +172,8 @@ class ColoradoData(object):
                 .reset_index()
         df2 = df2.merge(df3, left_on=cols, right_on=cols)
         df2['PERCENTAGE'] = df2['VOTES'] / df2['TOTALVOTES']
+        df2['YEAR'] = df2['YEAR'].dt.year
+
         hue_order = ['Democratic', 'Republican', 'Minor']
         g = sns.lineplot(data=df2, x='YEAR', y='PERCENTAGE', hue='PARTY',
                          hue_order=hue_order)
@@ -179,21 +212,89 @@ class ColoradoData(object):
     def partisan_trend(self):
         df = self.etl('results')
         cols = ['OFFICEISSUEJUDGESHIP', 'YEAR']
-        cols2 = ['PARTY', 'YEAR', 'STATEPERCENTAGE']
-        cols3 = ['PARTY', 'YEAR']
-        df2 = df.groupby(cols)\
-                .sum()\
-                .reset_index()
+        df2 = df.groupby(cols).sum().reset_index()
         df2.rename(columns={'VOTES':'TOTALVOTES'}, inplace=True)
-        df3 = df.groupby(['OFFICEISSUEJUDGESHIP', 'PARTY', 'YEAR'])\
-                .sum()\
-                .reset_index()
-        df3 = df3.merge(df2, left_on=cols, right_on=cols)
-        df3['STATEPERCENTAGE'] = df3['VOTES'] / df3['TOTALVOTES']
-        df3 = df3.loc[df3['PARTY'] == 'Democratic', cols2].groupby(cols3)\
-                                                          .mean()\
-                                                          .reset_index()
-        return df3
+        df3 = df.groupby(['OFFICEISSUEJUDGESHIP', 'PARTY', 'YEAR']).sum().reset_index()
+        df2 = df2.merge(df3, left_on=cols, right_on=cols)
+
+        df2 = df2.pivot(index=['OFFICEISSUEJUDGESHIP', 'YEAR', 'TOTALVOTES'],
+                        columns='PARTY', values='VOTES')\
+                 .reset_index()
+
+        df2['DEMLEAN'] = (df2['Democratic'] / df2['TOTALVOTES'])\
+                         - (df2['Republican'] / df2['TOTALVOTES'])
+        
+        df2 = df2.groupby('YEAR')\
+                 .mean()\
+                 .reset_index()
+        return df2
+
+    def predic_prep(self):
+        col = 'OFFICEISSUEJUDGESHIP'
+        gov = ['GOV./LIEUTENANTGOV.', 'GOVERNOR/LIEUTENANTGOVERNOR']
+        pres = ['PRESIDENT/VICEPRESIDENT', 'PRESIDENTIALELECTORS',
+                'PRESIDENTIALELECTORS/PRESIDENTIALELECTORS(VICE)']
+        reg = ['REGENTOFTHEUNIVERSITYOFCOLORADO-ATLARGE',
+               'UOFCREGENT-ATLARGE','UOFCREGENTS-ATLARGE']
+        df = self.censuspull()
+        df.set_index(['YEAR', 'NAME'], inplace=True)
+        
+        df2 = self.etl('results')
+        repl_dict = {'CONG.DISTRICT': 'USREPDISTRICT0',
+                     'REPRESENTATIVETOTHE111THUNITEDSTATESCONGRESS-DISTRICT':\
+                     'USREPDISTRICT0',
+                     'REPRESENTATIVETOTHE112THUNITEDSTATESCONGRESS-DISTRICT':\
+                     'USREPDISTRICT0',
+                     'UNITEDSTATESREPRESENTATIVE-DISTRICT':'USREPDISTRICT0'}
+
+        df2[col] = df2[col].apply(lambda x: ''.join(x.split()))
+        df2[col] = df2[col].str.upper()
+        df2.loc[df2[col].isin(gov), col] = 'GOVERNOR'
+        df2.loc[df2[col].isin(pres), col] = 'PRESIDENT'
+        df2.loc[df2[col].isin(reg), col] = 'UCREGENT'
+        df2.loc[df2[col] == 'TREASURER', col] = 'STATETREASURER'
+        df2.loc[df2[col] == 'UNITEDSTATESSENATOR', col] = 'USSENATOR'
+        for k, v in repl_dict.items():
+            df2[col] = df2[col].str.replace(k, v)
+
+
+        df2 = df2.groupby(['OFFICEISSUEJUDGESHIP', 'PARTY', 'YEAR'])\
+               .sum()\
+               .reset_index()
+
+        df2['YEAR'] = df2['YEAR'].dt.year
+        to_replace = ['ATTORNEYGENERAL', 'GOVERNOR', 'PRESIDENT', 'UCREGENT',
+                      'SECRETARYOFSTATE', 'STATETREASURER', 'USSENATOR']
+
+        office = ['ATTORNEYGENERAL', 'GOVERNOR', 'PRESIDENT',
+                  'SECRETARYOFSTATE', 'STATETREASURER', 'UCREGENT',
+                  'USREPDISTRICT01', 'USREPDISTRICT02', 'USREPDISTRICT03',
+                  'USREPDISTRICT04', 'USREPDISTRICT05', 'USREPDISTRICT06',
+                  'USREPDISTRICT07', 'USSENATOR']
+        party = ['Democratic', 'Minor', 'Republican']
+        year = [2020, 2022, 2024]
+        index = pd.MultiIndex.from_product([office, party, year], 
+                                           names=['OFFICEISSUEJUDGESHIP',
+                                                  'PARTY', 'YEAR'])
+        df3 = pd.DataFrame(index=index).reset_index()
+        df2 = df2.append(df3)
+
+        df2['NAME'] = df2['OFFICEISSUEJUDGESHIP'].str.replace('USREPDISTRICT',
+                                                              '')
+        df2.loc[df2['NAME'].isin(to_replace), 'NAME'] = 'Colorado'
+        df2.set_index(['YEAR', 'NAME'], inplace=True)
+
+
+        df = df.join(df2).reset_index()
+        # df.dropna(how='any', subset=['45TO64WHITE'], inplace=True)
+
+        df = pd.get_dummies(df, columns=['OFFICEISSUEJUDGESHIP', 'PARTY'])
+        df.columns = df.columns.str.upper()
+        df.columns = df.columns.str.replace('OFFICEISSUEJUDGESHIP_', '')
+        df.columns = df.columns.str.replace('PARTY_', '')        
+
+        return df
+
     #     df['Year'] = df2['Year'].apply(pd.to_datetime, format='%Y')
     #     df = df[cols]
     #     return df
